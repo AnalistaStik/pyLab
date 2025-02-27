@@ -1,8 +1,5 @@
 import customtkinter as ctk
-import datetime
-import os
-import re
-import sys
+import datetime, os, re, sys
 
 # Configuração inicial 
 ctk.set_appearance_mode("Dark")  # Modo de aparência (System, Dark, Light)
@@ -93,7 +90,7 @@ def iniciar_aplicacao():
 
     # Aba Operadores
     # Criar um frame para os botões na parte superior
-    frame_botoes = ctk.CTkFrame(tab_operador)
+    frame_botoes = ctk.CTkFrame(tab_operador, fg_color="transparent")
     frame_botoes.pack(pady=10, fill="x")
 
     # Criar um subframe para os botões principais
@@ -123,10 +120,10 @@ def iniciar_aplicacao():
     botao_pesquisar.pack(side="left", padx=5)                
 
     frame_conteudo = ctk.CTkFrame(tab_operador)
-    frame_conteudo.pack(expand=True, fill="x", padx=10, pady=10)
+    frame_conteudo.pack(expand=True, fill="both", padx=10, pady=10)
 
     # Garante que o frame_conteudo se expanda por toda a tela
-    frame_conteudo.grid_rowconfigure(0, weight=1)  # Expansão vertical
+    frame_conteudo.grid_rowconfigure(999, weight=1)  # Expansão vertical
     frame_conteudo.grid_columnconfigure(1, weight=1)  # Expansão horizontal
 
     campos = ["Nome:", "Matrícula:", "Senha:", "Data Cadastro:", "Data Inativo:"]
@@ -186,11 +183,11 @@ def iniciar_aplicacao():
 
     # Frame para o botão "salvar"
     frame_salvar = ctk.CTkFrame(frame_conteudo, fg_color="transparent")
-    frame_salvar.grid(row=100, column=0, columnspan=2, pady=20, sticky="sew")
+    frame_salvar.grid(row=999, column=0, columnspan=2, pady=20, sticky="sew")
 
     # Botão para salvar
     botao_salvar = ctk.CTkButton(frame_salvar, text="Salvar", font=("Arial", 35, "bold"))
-    botao_salvar.pack(fill="y", padx=10, pady=10)
+    botao_salvar.pack(padx=10, pady=10)
     
     # Mensagem de feedback
     label_mensagem = ctk.CTkLabel(frame_salvar, text="", text_color="red")
@@ -215,7 +212,7 @@ def iniciar_aplicacao():
 
     # Aba Insumos
     # Criar um frame para os botões na parte superior
-    frame_botoes = ctk.CTkFrame(tab_insumos)
+    frame_botoes = ctk.CTkFrame(tab_insumos, fg_color="transparent")
     frame_botoes.pack(pady=10, fill="x")
 
     # Criar um subframe para os botões principais
@@ -245,10 +242,10 @@ def iniciar_aplicacao():
     botao_pesquisar.pack(side="left", padx=5)                
 
     frame_conteudo = ctk.CTkFrame(tab_insumos)
-    frame_conteudo.pack(expand=True, fill="x", padx=10, pady=10)
+    frame_conteudo.pack(expand=True, fill="both", padx=10, pady=10)
 
     # Garante que o frame_conteudo se expanda por toda a tela
-    frame_conteudo.grid_rowconfigure(0, weight=1)  # Expansão vertical
+    frame_conteudo.grid_rowconfigure(999, weight=1)  # Expansão vertical
     frame_conteudo.grid_columnconfigure(1, weight=1)  # Expansão horizontal
 
     campos = ["Descrição:", "Tipo:", "Data Cadastro:", "Data Inativo:", "Preço de Custo:", "Quantidade do Estoque:"]
@@ -281,16 +278,19 @@ def iniciar_aplicacao():
 
     for i, texto in enumerate(campos):
         label = ctk.CTkLabel(frame_conteudo, text=texto, font=("Arial", 35, "bold"))
-        label.grid(row=i+1, column=0, sticky="w", padx=10, pady=15)
+        label.grid(row=i, column=0, sticky="w", padx=10, pady=15)
         
         if texto == "Tipo:":
-            # Campo "Tipo" (não editável)
-            entrada_tipo = ctk.CTkEntry(frame_conteudo, width=600, height=40, placeholder_text="Corante") 
-            entrada_tipo.grid(row=i+1, column=1, sticky="w", padx=10, pady=5)
+            frame_tipo = ctk.CTkFrame(frame_conteudo, fg_color="transparent")
+            frame_tipo.grid(row=i, column=1, sticky="w", padx=10, pady=5)
+            
+             # Campo "Tipo" (não editável)
+            entrada_tipo = ctk.CTkEntry(frame_tipo, width=600, height=40, placeholder_text="Corante") 
+            entrada_tipo.pack(side="left", fill="both", expand=True)
 
             # Botão para abrir/fechar o menu suspenso
-            botao_tipo = ctk.CTkButton(frame_conteudo, text="▼", width=40, height=40, command=toggle_menu)
-            botao_tipo.grid(row=i+1, column=2, sticky="w", padx=10, pady=5)
+            botao_tipo = ctk.CTkButton(frame_tipo, text="▼", width=40, height=40, command=toggle_menu)
+            botao_tipo.pack(side="right", padx=(5, 0))
 
             # Frame do menu suspenso (inicia oculto)
             frame_opcoes = ctk.CTkFrame(frame_conteudo, width=600) 
@@ -314,26 +314,26 @@ def iniciar_aplicacao():
             entrada = ctk.CTkEntry(frame_conteudo, width=600, height=40)
             entrada.bind("<KeyRelease>", lambda event, e=entrada: formatar_preco(event, e))
             entradas[texto] = entrada
-            entrada.grid(row=i+1, column=1, sticky="w", padx=10, pady=5)
+            entrada.grid(row=i, column=1, sticky="w", padx=10, pady=5)
 
         elif texto in ["Data Cadastro:", "Data Inativo:"]:
             entrada = ctk.CTkEntry(frame_conteudo, width=600, height=40, placeholder_text="DD/MM/AA")
             entrada.bind("<KeyRelease>", lambda event, e=entrada: formatar_data(event, e))
             entradas[texto] = entrada
-            entrada.grid(row=i+1, column=1, sticky="w", padx=10, pady=5)
+            entrada.grid(row=i, column=1, sticky="w", padx=10, pady=5)
 
         else:
             entrada = ctk.CTkEntry(frame_conteudo, width=600, height=40)
             entradas[texto] = entrada
-            entrada.grid(row=i+1, column=1, sticky="w", padx=10, pady=5)
+            entrada.grid(row=i, column=1, sticky="w", padx=10, pady=5)
 
     # Frame para o botão "salvar"
     frame_salvar = ctk.CTkFrame(frame_conteudo, fg_color="transparent")
-    frame_salvar.grid(row=100, column=0, columnspan=2, pady=20, sticky="sew")
+    frame_salvar.grid(row=999, column=0, columnspan=2, pady=20, sticky="sew")
 
     # Botão para salvar
     botao_salvar = ctk.CTkButton(frame_salvar, text="Salvar", font=("Arial", 35, "bold"))
-    botao_salvar.pack(fill="y", padx=10, pady=10)
+    botao_salvar.pack(padx=10, pady=10)
     
     # Mensagem de feedback
     label_mensagem = ctk.CTkLabel(frame_salvar, text="", text_color="red")
@@ -345,7 +345,7 @@ def iniciar_aplicacao():
 
     # Aba Artigos
     # Criar um frame para os botões na parte superior
-    frame_botoes = ctk.CTkFrame(tab_artigos)
+    frame_botoes = ctk.CTkFrame(tab_artigos, fg_color="transparent")
     frame_botoes.pack(pady=10, fill="x")
 
     # Criar um subframe para os botões principais
@@ -375,10 +375,10 @@ def iniciar_aplicacao():
     botao_pesquisar.pack(side="left", padx=5)                
 
     frame_conteudo = ctk.CTkFrame(tab_artigos)
-    frame_conteudo.pack(expand=True, fill="x", padx=10, pady=10)
+    frame_conteudo.pack(expand=True, fill="both", padx=10, pady=10)
 
     # Garante que o frame_conteudo se expanda por toda a tela
-    frame_conteudo.grid_rowconfigure(0, weight=1)  # Expansão vertical
+    frame_conteudo.grid_rowconfigure(999, weight=1)  # Expansão vertical
     frame_conteudo.grid_columnconfigure(1, weight=1)  # Expansão horizontal
 
     campos = ["Descrição:", "Data Cadastro:", "Data Inativo:"]
@@ -400,11 +400,11 @@ def iniciar_aplicacao():
 
     # Frame para o botão "salvar"
     frame_salvar = ctk.CTkFrame(frame_conteudo, fg_color="transparent")
-    frame_salvar.grid(row=100, column=0, columnspan=2, pady=20, sticky="sew")
+    frame_salvar.grid(row=999, column=0, columnspan=2, pady=20, sticky="sew")
 
     # Botão para salvar
     botao_salvar = ctk.CTkButton(frame_salvar, text="Salvar", font=("Arial", 35, "bold"))
-    botao_salvar.pack(fill="y", padx=10, pady=10)
+    botao_salvar.pack(padx=10, pady=10)
     
     # Mensagem de feedback
     label_mensagem = ctk.CTkLabel(frame_salvar, text="", text_color="red")
