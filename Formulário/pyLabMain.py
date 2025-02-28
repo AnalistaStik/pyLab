@@ -340,8 +340,96 @@ def iniciar_aplicacao():
     label_mensagem.pack()
     
     # Aba Cores
-    label_cor = ctk.CTkLabel(tab_cor, text="Cadastro de Cores", font=("Arial", 16))
-    label_cor.pack(pady=20)
+    # Criar um frame para os botões na parte superior
+    frame_botoes = ctk.CTkFrame(tab_cor, fg_color="transparent")
+    frame_botoes.pack(pady=10, fill="x")
+
+    # Criar um subframe para os botões principais
+    frame_acoes = ctk.CTkFrame(frame_botoes)
+    frame_acoes.pack(pady=5)
+
+    # Criar os botões
+    botao_novo = ctk.CTkButton(frame_acoes, text="Novo", font=("Arial", 20, "bold"), width=100)
+    botao_alterar = ctk.CTkButton(frame_acoes, text="Alterar", font=("Arial", 20, "bold"), width=100)
+    botao_cancelar = ctk.CTkButton(frame_acoes, text="Cancelar", font=("Arial", 20, "bold"), width=100)
+    botao_excluir = ctk.CTkButton(frame_acoes, text="Excluir", font=("Arial", 20, "bold"), width=100)
+
+    # Posicionar os botões no frame_acoes lado a lado
+    botao_novo.pack(side="left", padx=5)
+    botao_alterar.pack(side="left", padx=5)
+    botao_cancelar.pack(side="left", padx=5)
+    botao_excluir.pack(side="left", padx=5)
+
+    # Criar input de pesquisa
+    frame_pesquisar = ctk.CTkFrame(frame_botoes)
+    frame_pesquisar.pack()
+
+    entrada_pesquisar = ctk.CTkEntry(frame_pesquisar, width=305, placeholder_text="Pesquisar Cor", font=("Arial", 15))
+    botao_pesquisar = ctk.CTkButton(frame_pesquisar, text="Pesquisar", font=("Arial", 20, "bold"), width=100)
+
+    entrada_pesquisar.pack(side="left", padx=5)
+    botao_pesquisar.pack(side="left", padx=5)                
+    frame_conteudo = ctk.CTkFrame(tab_cor)
+    frame_conteudo.pack(expand=True, fill="both", padx=10, pady=10)
+
+    # Garante que o frame_conteudo se expanda por toda a tela
+    frame_conteudo.grid_rowconfigure(999, weight=1)  # Expansão vertical
+    frame_conteudo.grid_columnconfigure(1, weight=1)  # Expansão horizontal
+
+    campos = [
+        ("Descrição:",), 
+        ("Corante 01:", "Corante 02:"),  
+        ("Gramas:", "Gramas:"), 
+        ("Corante 03:", "Corante 04:"), 
+        ("Gramas:", "Gramas:"), 
+        ("Data Cadastro:",), 
+        ("Data Inativo:",)
+    ]
+    entradas = {}
+    row_index = 0
+
+    for linha in campos:
+        """for i, texto in enumerate(campos):
+        label = ctk.CTkLabel(frame_conteudo, text=texto, font=("Arial", 35, "bold"))
+        label.grid(row=i, column=0, sticky="w", padx=10, pady=15)"""
+        if len(linha) == 1:  # Campos de linha única (Descrição, Data Cadastro, Data Inativo)
+            label = ctk.CTkLabel(frame_conteudo, text=linha[0], font=("Arial", 20, "bold"))
+            label.grid(row=row_index, column=0, sticky="w", padx=10, pady=15)
+
+            largura = 600
+            placeholder = "DD/MM/AA" if "Data" in linha[0] else "Digite aqui..."
+
+            entrada = ctk.CTkEntry(frame_conteudo, width=largura, height=30, placeholder_text=placeholder)
+            if "Data" in linha[0]:
+                entrada.bind("<KeyRelease>", lambda event, e=entrada: formatar_data(event, e))
+
+            entrada.grid(row=row_index, column=1, sticky="w", padx=10, pady=5)
+            entradas[linha[0]] = entrada
+
+            row_index += 1
+
+        else:  # Inputs paralelos (Corantes e Gramas)
+            for j, texto in enumerate(linha):
+                label = ctk.CTkLabel(frame_conteudo, text=texto, font=("Arial", 20, "bold"))
+                label.grid(row=row_index, column=j, sticky="w", padx=10, pady=5)
+            row_index += 1
+            for j, texto in enumerate(linha):
+                entrada = ctk.CTkEntry(frame_conteudo, width=300, height=30, placeholder_text="Digite aqui...")
+                entrada.grid(row=row_index, column=j, sticky="w", padx=10, pady=5)
+                entradas[texto] = entrada
+            row_index += 1
+        
+    # Frame para o botão "salvar"
+    frame_salvar = ctk.CTkFrame(frame_conteudo, fg_color="transparent")
+    frame_salvar.grid(row=999, column=0, columnspan=2, pady=20, sticky="sew")
+
+    # Botão para salvar
+    botao_salvar = ctk.CTkButton(frame_salvar, text="Salvar", font=("Arial", 35, "bold"))
+    botao_salvar.pack(padx=10, pady=10)
+    
+    # Mensagem de feedback
+    label_mensagem = ctk.CTkLabel(frame_salvar, text="", text_color="red")
+    label_mensagem.pack()
 
     # Aba Artigos
     # Criar um frame para os botões na parte superior
