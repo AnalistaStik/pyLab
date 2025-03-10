@@ -374,57 +374,83 @@ def iniciar_aplicacao():
     frame_conteudo = ctk.CTkFrame(tab_cor)
     frame_conteudo.pack(expand=True, fill="both", padx=10, pady=10)
 
-    frame_linha_unica = ctk.CTkFrame(frame_conteudo)
+    frame_linha_unica = ctk.CTkFrame(frame_conteudo, fg_color="transparent")
     frame_linha_unica.pack(fill="x", padx=10)
 
-    frame_paralelo = ctk.CTkFrame(frame_conteudo)
+    frame_paralelo = ctk.CTkFrame(frame_conteudo, fg_color="transparent")
     frame_paralelo.pack(fill="x", padx=10)
 
-    frame_ultimo = ctk.CTkFrame(frame_conteudo)
-    frame_ultimo.pack(fill="x", padx=10)
+    frame_ultimo = ctk.CTkFrame(frame_conteudo, fg_color="transparent")
+    frame_ultimo.pack(fill="both", padx=10)
 
-    # Campos e entradas
+    # Garante que o frame_conteudo se expanda por toda a tela
+    frame_conteudo.grid_rowconfigure(999, weight=1)  # Expansão vertical
+    frame_conteudo.grid_columnconfigure(1, weight=1)  # Expansão horizontal
+
+    label = ctk.CTkLabel(frame_linha_unica, text="Descrição:", font=("Arial", 20, "bold"))
+    label.grid(row=0, column=0, sticky="w", padx=10, pady=10)
+
+    entrada = ctk.CTkEntry(frame_linha_unica, width=600, height=30, placeholder_text="Digite aqui...")
+    entrada.grid(row=0, column=1, sticky="w", padx=50, pady=5)
+    entradas["Descrição"] = entrada
+
+    # Campos
     campos = [
-        ("Descrição:",), 
+        ("Data Cadastro:",),
+        ("Data Inativo:",)
+    ]
+
+    # Campos paralelos
+    campos_paralelos = [
         ("Corante 01:", "Corante 02:"),  
         ("Gramas:", "Gramas:"), 
         ("Corante 03:", "Corante 04:"), 
         ("Gramas:", "Gramas:"), 
-        ("Data Cadastro:",), 
-        ("Data Inativo:",)
     ]
     entradas = {}
+
+    # Adicionando campos paralelos
+    row_index = 0
+    for i, linha in enumerate(campos_paralelos):
+        for j, texto in enumerate(linha):
+            label = ctk.CTkLabel(frame_paralelo, text=texto, font=("Arial", 20, "bold"))
+            label.grid(row=row_index, column=j * 2, sticky="w", padx=10, pady=5)
+            
+            entrada = ctk.CTkEntry(frame_paralelo, width=370, height=30, placeholder_text="Digite aqui...")
+            entrada.grid(row=row_index + 1, column=j * 2, sticky="w", padx=10, pady=5)
+            entradas[texto] = entrada
+    
+        row_index += 2  # Incrementar para manter espaço entre linhas
+    
 
     # Adicionando campos de linha única
     for i, linha in enumerate(campos):
         if len(linha) == 1:
             texto = linha[0]
-            label = ctk.CTkLabel(frame_linha_unica, text=texto, font=("Arial", 20, "bold"))
+            label = ctk.CTkLabel(frame_ultimo, text=texto, font=("Arial", 20, "bold"))
             label.grid(row=i, column=0, sticky="w", padx=10, pady=5)
             
             largura = 600
             placeholder = "DD/MM/AA" if "Data" in texto else "Digite aqui..."
             
-            entrada = ctk.CTkEntry(frame_linha_unica, width=largura, height=30, placeholder_text=placeholder)
+            entrada = ctk.CTkEntry(frame_ultimo, width=largura, height=30, placeholder_text=placeholder)
             if "Data" in texto:
                 entrada.bind("<KeyRelease>", lambda event, e=entrada: formatar_data(event, e))
             
             entrada.grid(row=i, column=1, sticky="w", padx=10, pady=5)
             entradas[texto] = entrada
 
-    # Adicionando campos paralelos
-    row_index = 0
-    for i, linha in enumerate(campos):
-        if len(linha) == 2:
-            for j, texto in enumerate(linha):
-                label = ctk.CTkLabel(frame_paralelo, text=texto, font=("Arial", 20, "bold"))
-                label.grid(row=row_index, column=j * 2, sticky="w", padx=10, pady=5)
-                
-                entrada = ctk.CTkEntry(frame_paralelo, width=370, height=30, placeholder_text="Digite aqui...")
-                entrada.grid(row=row_index + 1, column=j * 2, sticky="w", padx=10, pady=5)
-                entradas[texto] = entrada
-        
-            row_index += 2  # Incrementar para manter espaço entre linhas
+    # Frame para o botão "salvar"
+    frame_salvar = ctk.CTkFrame(frame_conteudo, fg_color="transparent")
+    frame_salvar.pack(expand=True, fill="both", padx=10, pady=10)
+
+    # Botão para salvar
+    botao_salvar = ctk.CTkButton(frame_salvar, text="Salvar", font=("Arial", 35, "bold"))
+    botao_salvar.pack(fill="x", padx=10, pady=10)
+    
+    # Mensagem de feedback
+    label_mensagem = ctk.CTkLabel(frame_salvar, text="", text_color="red")
+    label_mensagem.pack()
 
     # Aba Artigos
     # Criar um frame para os botões na parte superior
