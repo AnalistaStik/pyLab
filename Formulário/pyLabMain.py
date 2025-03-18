@@ -56,7 +56,7 @@ def formatar_data(event, entry, label_mensagem):
 
         except ValueError:
             label_mensagem.configure(text="Data Inválida! Insira um valor correto.", text_color="red")
-                
+         
 # Iniciar aplicação após login
 def iniciar_aplicacao():
     global label_mensagem, entradas
@@ -93,7 +93,7 @@ def iniciar_aplicacao():
     tab_insumos = tabview.add("Insumos")
     tab_cor = tabview.add("Cor")
     tab_artigos = tabview.add("Artigos")
-
+   
     # Aba Operadores
     # Criar um frame para os botões na parte superior
     frame_botoes = ctk.CTkFrame(tab_operador, fg_color="transparent")
@@ -125,23 +125,23 @@ def iniciar_aplicacao():
     entrada_pesquisar.pack(side="left", padx=5)
     botao_pesquisar.pack(side="left", padx=5)                
 
-    frame_conteudo = ctk.CTkFrame(tab_operador)
-    frame_conteudo.pack(expand=True, fill="both", padx=10, pady=10)
+    frame_conteudo_op = ctk.CTkFrame(tab_operador)
+    frame_conteudo_op.pack(expand=True, fill="both", padx=10, pady=10)
 
     # Garante que o frame_conteudo se expanda por toda a tela
-    frame_conteudo.grid_rowconfigure(999, weight=1)  # Expansão vertical
-    frame_conteudo.grid_columnconfigure(1, weight=1)  # Expansão horizontal
+    frame_conteudo_op.grid_rowconfigure(999, weight=1)  # Expansão vertical
+    frame_conteudo_op.grid_columnconfigure(1, weight=1)  # Expansão horizontal
 
     campos = ["Nome:", "Matrícula:", "Senha:", "Data Cadastro:", "Data Inativo:"]
     
     entradas_op = {}
     for i, texto in enumerate(campos):
-        label = ctk.CTkLabel(frame_conteudo, text=texto, font=("Arial", 20, "bold"))
+        label = ctk.CTkLabel(frame_conteudo_op, text=texto, font=("Arial", 20, "bold"))
         label.grid(row=i, column=0, sticky="w", padx=10, pady=15)
 
         if texto == "Senha:":
             # Criando um frame para agrupar o campo de senha e o botão
-            frame_senha = ctk.CTkFrame(frame_conteudo, fg_color="transparent")
+            frame_senha = ctk.CTkFrame(frame_conteudo_op, fg_color="transparent")
             frame_senha.grid(row=i, column=1, sticky="w", padx=10, pady=5)
 
             # Criando o campo de senha dentro do frame
@@ -155,21 +155,22 @@ def iniciar_aplicacao():
             entradas_op[texto] = entrada_senha        
         
         elif texto in ["Data Cadastro:", "Data Inativo:"]:
-            entrada = ctk.CTkEntry(frame_conteudo, width=600, height=30, placeholder_text="DD/MM/AA")
+            entrada = ctk.CTkEntry(frame_conteudo_op, width=600, height=30, placeholder_text="DD/MM/AA")
             entrada.bind("<KeyRelease>", lambda event, e=entrada: formatar_data(event, e, label_mensagem_op))
             entradas_op[texto] = entrada
             entrada.grid(row=i, column=1, sticky="w", padx=10, pady=5)
         else:
-            entrada = ctk.CTkEntry(frame_conteudo, width=600, height=30, placeholder_text="Digite aqui...")
+            entrada = ctk.CTkEntry(frame_conteudo_op, width=600, height=30, placeholder_text="Digite aqui...")
             entradas_op[texto] = entrada
             entrada.grid(row=i, column=1, sticky="w", padx=10, pady=5)
+   
     # Turno (botões de seleção)
     turno_var = ctk.StringVar(value="Manhã")  
 
-    label_turno = ctk.CTkLabel(frame_conteudo, text="Turno:", font=("Arial", 20, "bold"))
+    label_turno = ctk.CTkLabel(frame_conteudo_op, text="Turno:", font=("Arial", 20, "bold"))
     label_turno.grid(row=len(campos)+1, column=0, sticky="w", padx=10, pady=5)
 
-    frame_turno = ctk.CTkFrame(frame_conteudo, fg_color="transparent")
+    frame_turno = ctk.CTkFrame(frame_conteudo_op, fg_color="transparent")
     frame_turno.grid(row=len(campos)+1, column=1, sticky="w", padx=10, pady=5)
 
     turno_manha = ctk.CTkRadioButton(frame_turno, text="Manhã", font=("Arial", 20, "bold"), variable=turno_var, value="Manhã")
@@ -180,7 +181,7 @@ def iniciar_aplicacao():
     turno_tarde.pack(side="left", padx=15)
     turno_noite.pack(side="left", padx=15)
 
-    frame_salvar_op = ctk.CTkFrame(frame_conteudo, fg_color="transparent")
+    frame_salvar_op = ctk.CTkFrame(frame_conteudo_op, fg_color="transparent")
     frame_salvar_op.grid(row=999, column=0, columnspan=2, pady=20, sticky="sew")
 
     # Label para mensagens de sucesso ou erro
@@ -222,12 +223,12 @@ def iniciar_aplicacao():
     entrada_pesquisar.pack(side="left", padx=5)
     botao_pesquisar.pack(side="left", padx=5)                
 
-    frame_conteudo = ctk.CTkFrame(tab_insumos)
-    frame_conteudo.pack(expand=True, fill="both", padx=10, pady=10)
+    frame_conteudo_in = ctk.CTkFrame(tab_insumos)
+    frame_conteudo_in.pack(expand=True, fill="both", padx=10, pady=10)
 
     # Garante que o frame_conteudo se expanda por toda a tela
-    frame_conteudo.grid_rowconfigure(999, weight=1)  # Expansão vertical
-    frame_conteudo.grid_columnconfigure(1, weight=1)  # Expansão horizontal
+    frame_conteudo_in.grid_rowconfigure(999, weight=1)  # Expansão vertical
+    frame_conteudo_in.grid_columnconfigure(1, weight=1)  # Expansão horizontal
 
     campos = ["Descrição:", "Tipo:", "Data Cadastro:", "Data Inativo:", "Preço de Custo:", "Quantidade do Estoque:"]
     entradas_in = {}
@@ -251,18 +252,18 @@ def iniciar_aplicacao():
             menu_aberto = False
         else:
             entrada_tipo.update_idletasks()
-            x = entrada_tipo.winfo_rootx() - frame_conteudo.winfo_rootx()
-            y = entrada_tipo.winfo_rooty() - frame_conteudo.winfo_rooty() + entrada_tipo.winfo_height()
+            x = entrada_tipo.winfo_rootx() - frame_conteudo_in.winfo_rootx()
+            y = entrada_tipo.winfo_rooty() - frame_conteudo_in.winfo_rooty() + entrada_tipo.winfo_height()
             frame_opcoes.place(x=x, y=y)
             frame_opcoes.lift()  # Traz o menu para frente, sobre os demais widgets
             menu_aberto = True
 
     for i, texto in enumerate(campos):
-        label = ctk.CTkLabel(frame_conteudo, text=texto, font=("Arial", 20, "bold"))
+        label = ctk.CTkLabel(frame_conteudo_in, text=texto, font=("Arial", 20, "bold"))
         label.grid(row=i, column=0, sticky="w", padx=10, pady=15)
         
         if texto == "Tipo:":
-            frame_tipo = ctk.CTkFrame(frame_conteudo, fg_color="transparent")
+            frame_tipo = ctk.CTkFrame(frame_conteudo_in, fg_color="transparent")
             frame_tipo.grid(row=i, column=1, sticky="w", padx=10, pady=5)
             
              # Campo "Tipo" (não editável)
@@ -274,7 +275,7 @@ def iniciar_aplicacao():
             botao_tipo.pack(side="right", padx=(5, 0))
 
             # Frame do menu suspenso (inicia oculto)
-            frame_opcoes = ctk.CTkFrame(frame_conteudo, width=600) 
+            frame_opcoes = ctk.CTkFrame(frame_conteudo_in, width=600) 
             frame_opcoes.place_forget()
 
             # Opções do menu suspenso
@@ -292,23 +293,23 @@ def iniciar_aplicacao():
                     entrada.delete(0, "end")
                     entrada.insert(0, f"R$ {valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")) # Formato BRL
 
-            entrada = ctk.CTkEntry(frame_conteudo, width=600, height=30, placeholder_text="R$:")
+            entrada = ctk.CTkEntry(frame_conteudo_in, width=600, height=30, placeholder_text="R$:")
             entrada.bind("<KeyRelease>", lambda event, e=entrada: formatar_preco(event, e))
             entradas_in[texto] = entrada
             entrada.grid(row=i, column=1, sticky="w", padx=10, pady=5)
 
         elif texto in ["Data Cadastro:", "Data Inativo:"]:
-            entrada = ctk.CTkEntry(frame_conteudo, width=600, height=30, placeholder_text="DD/MM/AA")
+            entrada = ctk.CTkEntry(frame_conteudo_in, width=600, height=30, placeholder_text="DD/MM/AA")
             entrada.bind("<KeyRelease>", lambda event, e=entrada: formatar_data(event, e, label_mensagem_in))
             entradas_in[texto] = entrada
             entrada.grid(row=i, column=1, sticky="w", padx=10, pady=5)
 
         else:
-            entrada = ctk.CTkEntry(frame_conteudo, width=600, height=30, placeholder_text="Digite aqui...")
+            entrada = ctk.CTkEntry(frame_conteudo_in, width=600, height=30, placeholder_text="Digite aqui...")
             entradas_in[texto] = entrada
             entrada.grid(row=i, column=1, sticky="w", padx=10, pady=5)
 
-    frame_salvar_in = ctk.CTkFrame(frame_conteudo, fg_color="transparent")
+    frame_salvar_in = ctk.CTkFrame(frame_conteudo_in, fg_color="transparent")
     frame_salvar_in.grid(row=999, column=0, columnspan=2, pady=20, sticky="sew")
 
     # Label para mensagens de sucesso ou erro
@@ -351,20 +352,20 @@ def iniciar_aplicacao():
     botao_pesquisar.pack(side="left", padx=5)                
         
     # Criação dos subframes, todos ainda vinculados ao tab_cor
-    frame_conteudo = ctk.CTkFrame(tab_cor)
-    frame_conteudo.pack(expand=True, fill="both", padx=10, pady=10)
+    frame_conteudo_cor = ctk.CTkFrame(tab_cor)
+    frame_conteudo_cor.pack(expand=True, fill="both", padx=10, pady=10)
 
     # Garante que o frame_conteudo se expanda por toda a tela
-    frame_conteudo.grid_rowconfigure(999, weight=1)  # Expansão vertical
-    frame_conteudo.grid_columnconfigure(1, weight=1)  # Expansão horizontal
+    frame_conteudo_cor.grid_rowconfigure(999, weight=1)  # Expansão vertical
+    frame_conteudo_cor.grid_columnconfigure(1, weight=1)  # Expansão horizontal
 
-    frame_linha_unica = ctk.CTkFrame(frame_conteudo, fg_color="transparent")
+    frame_linha_unica = ctk.CTkFrame(frame_conteudo_cor, fg_color="transparent")
     frame_linha_unica.grid(row=0, column=0, sticky="sew", padx=10)
 
-    frame_paralelo = ctk.CTkFrame(frame_conteudo, fg_color="transparent")
+    frame_paralelo = ctk.CTkFrame(frame_conteudo_cor, fg_color="transparent")
     frame_paralelo.grid(row=1, column=0, sticky="sew", padx=10)
 
-    frame_ultimo = ctk.CTkFrame(frame_conteudo, fg_color="transparent")
+    frame_ultimo = ctk.CTkFrame(frame_conteudo_cor, fg_color="transparent")
     frame_ultimo.grid(row=2, column=0, sticky="sew", padx=10)
 
     # Campos
@@ -419,7 +420,7 @@ def iniciar_aplicacao():
             entrada.grid(row=i, column=1, sticky="w", padx=10, pady=5)
             entradas_cor[texto] = entrada
 
-    frame_salvar_cor = ctk.CTkFrame(frame_conteudo, fg_color="transparent")
+    frame_salvar_cor = ctk.CTkFrame(frame_conteudo_cor, fg_color="transparent")
     frame_salvar_cor.grid(row=999, column=0, columnspan=2, pady=20, sticky="sew"),
 
     # Label para mensagens de sucesso ou erro
@@ -461,32 +462,32 @@ def iniciar_aplicacao():
     entrada_pesquisar.pack(side="left", padx=5)
     botao_pesquisar.pack(side="left", padx=5)                
 
-    frame_conteudo = ctk.CTkFrame(tab_artigos)
-    frame_conteudo.pack(expand=True, fill="both", padx=10, pady=10)
+    frame_conteudo_art = ctk.CTkFrame(tab_artigos)
+    frame_conteudo_art.pack(expand=True, fill="both", padx=10, pady=10)
     
     # Garante que o frame_conteudo se expanda por toda a tela
-    frame_conteudo.grid_rowconfigure(999, weight=1)  # Expansão vertical
-    frame_conteudo.grid_columnconfigure(1, weight=1)  # Expansão horizontal
+    frame_conteudo_art.grid_rowconfigure(999, weight=1)  # Expansão vertical
+    frame_conteudo_art.grid_columnconfigure(1, weight=1)  # Expansão horizontal
 
     campos = ["Descrição:", "Data Cadastro:", "Data Inativo:"]
     entradas_art = {}
 
     for i, texto in enumerate(campos):
-        label = ctk.CTkLabel(frame_conteudo, text=texto, font=("Arial", 20, "bold"))
+        label = ctk.CTkLabel(frame_conteudo_art, text=texto, font=("Arial", 20, "bold"))
         label.grid(row=i+1, column=0, sticky="w", padx=10, pady=15)
         
         if texto in ["Data Cadastro:", "Data Inativo:"]:
-            entrada = ctk.CTkEntry(frame_conteudo, width=600, height=30, placeholder_text="DD/MM/AA")
+            entrada = ctk.CTkEntry(frame_conteudo_art, width=600, height=30, placeholder_text="DD/MM/AA")
             entrada.bind("<KeyRelease>", lambda event, e=entrada: formatar_data(event, e, label_mensagem_art))
             entradas_art[texto] = entrada
             entrada.grid(row=i+1, column=1, sticky="w", padx=10, pady=5)
         else:
-            entrada = ctk.CTkEntry(frame_conteudo, width=600, height=30, placeholder_text="Digite aqui...")
+            entrada = ctk.CTkEntry(frame_conteudo_art, width=600, height=30, placeholder_text="Digite aqui...")
             entradas_art[texto] = entrada
             entrada.grid(row=i+1, column=1, sticky="w", padx=10, pady=5)
 
     # Frame para o botão "salvar"
-    frame_salvar_art = ctk.CTkFrame(frame_conteudo, fg_color="transparent")
+    frame_salvar_art = ctk.CTkFrame(frame_conteudo_art, fg_color="transparent")
     frame_salvar_art.grid(row=999, column=0, columnspan=2, pady=20, sticky="sew")
 
     # Label para mensagens de sucesso ou erro
