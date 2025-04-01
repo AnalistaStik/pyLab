@@ -1,29 +1,55 @@
+import datetime, os, re, sys, subprocess, pyodbc, datetime, pyodbc
+
+if getattr(sys, "frozen", False):
+    sys.path.append(os.path.join(sys._MEIPASS, "customtkinter"))
+
 import customtkinter as ctk
-import datetime, os, re, sys
 
 # Configuração inicial 
 ctk.set_appearance_mode("Dark")  # Modo de aparência (System, Dark, Light)
 ctk.set_default_color_theme("blue")  # Tema de cores padrão
 
-def salvar_dados(entradas, label_mensagem):
+def create_connection(): 
+    server = "168.190.30.2"
+    database = "Teste_Gabriel"
+    username = "sa"
+    password = "Stik0123"
+
+    connection_string = (
+        f'DRIVER={{SQL Server}};SERVER={server};DATABASE={database};'
+        f'UID={username};PWD={password}'
+    )
+
+    try:
+        conn = pyodbc.connect(connection_string)
+        print("Conexão Estabelecida!")
+        return conn
+    except pyodbc.Error as e:
+        print(f'Erro ao conectar ao banco de dados: {str(e)}')
+        return None
+
+def salvar_dados(tabela, entradas):
+    conn = create_connection()
     if not entradas:
         return 
     
-    dados = {campo: entrada.get().strip() for campo, entrada in entradas.items()}
+    try:
+        cursor = conn.cursor()
 
-    campos_vazios = [campo for campo, valor, in dados.items() if not valor]
-    if campos_vazios:
-        mensagem = f"Preencha todos os campos!"
-        cor = "red"
-    else:
-        print("Dados salvos:")
-        for campo, valor in dados.items():
-            print(f"{campo}: {valor}")
-        mensagem = "Dados salvos com sucesso!"
-        cor = "blue"
+        colunas =  ', '.join(entradas.keys())
+        placeholders = ', '.join(['?' for _ in entradas])
+        query = f"INSERT INTO {tabela} ({colunas}) VALUE({placeholders})"
+
+        cursor.execute(query, tuple(entradas.values()))
+        conn.commit()
+        print(f"Dados inseridos na tabela {tabela} com sucesso!")
+
+    except Exception as e:
+        print(f"Erro ao inserir na tabela {tabela}:", e)
     
-    if label_mensagem:
-        label_mensagem.configure(text=mensagem, text_color=cor)
+    finally:
+        cursor.close()
+        conn.close()
 
 def formatar_data(event, entry, label_mensagem):
     texto = entry.get().replace("/", "")
@@ -57,6 +83,29 @@ def formatar_data(event, entry, label_mensagem):
         except ValueError:
             label_mensagem.configure(text="Data Inválida! Insira um valor correto.", text_color="red")
          
+# def atualizar_sistema():
+#     hora_atual = datetime.now()
+#     # Atualiza o sistema baixando a última versão do Github.
+#     diretorio_projeto = os.path.dirname(os.path.abspath(__file__))
+
+#     # Verifica se o diretório é um repositório Git
+#     if os.path.exists(os.path.join(diretorio_projeto, ".git")):
+#         try:
+#             if hora_atual.hour == 12:
+#                 # Puxa as últimas alterações do repositório
+#                 subprocess.run(["git", "pull"], cwd=diretorio_projeto, check=True)
+#                 print("Sistema atualizado com sucesso! Reiniciando...")
+
+#                 # Reinicia o programa apoós a atualização
+#                 python_exe = os.path.basename(os.sys.executable)
+#                 os.execl(python_exe, python_exe, *os.sys.argv)
+#             else:
+#                 print("Uma nova versão está disponivel, o programa será atualizado ás 12:00. Não desligue o computador.")
+#         except subprocess.CalledProcessError as e:
+#             print("Erro ao atualizar", e)
+#     else:
+#         print("Este programa não está dentro de um repositório Git.")
+    
 # Iniciar aplicação após login
 def iniciar_aplicacao():
     global label_mensagem, entradas
@@ -77,7 +126,7 @@ def iniciar_aplicacao():
     # Janela principal
     janela = ctk.CTk()
     janela.title("Receitas")
-    janela.geometry("1155x784")
+    janela.geometry("974x816")
     janela.resizable(False, False)
 
     # Associando a tecla F5 para atualizar
@@ -96,34 +145,34 @@ def iniciar_aplicacao():
    
     # Aba Operadores
     # Criar um frame para os botões na parte superior
-    frame_botoes = ctk.CTkFrame(tab_operador, fg_color="transparent")
-    frame_botoes.pack(pady=10, fill="x")
+    frame_botoes_op = ctk.CTkFrame(tab_operador, fg_color="transparent")
+    frame_botoes_op.pack(pady=10, fill="x")
 
     # Criar um subframe para os botões principais
-    frame_acoes = ctk.CTkFrame(frame_botoes)
-    frame_acoes.pack(pady=5)
+    frame_acoes_op = ctk.CTkFrame(frame_botoes_op)
+    frame_acoes_op.pack(pady=5)
 
     # Criar os botões
-    botao_novo = ctk.CTkButton(frame_acoes, text="Novo", font=("Arial", 20, "bold"), width=100)
-    botao_alterar = ctk.CTkButton(frame_acoes, text="Alterar", font=("Arial", 20, "bold"), width=100)
-    botao_cancelar = ctk.CTkButton(frame_acoes, text="Cancelar", font=("Arial", 20, "bold"), width=100)
-    botao_excluir = ctk.CTkButton(frame_acoes, text="Excluir", font=("Arial", 20, "bold"), width=100)
+    botao_novo_op = ctk.CTkButton(frame_acoes_op, text="Novo", font=("Arial", 20, "bold"), width=100)
+    botao_alterar_op = ctk.CTkButton(frame_acoes_op, text="Alterar", font=("Arial", 20, "bold"), width=100)
+    botao_cancelar_op = ctk.CTkButton(frame_acoes_op, text="Cancelar", font=("Arial", 20, "bold"), width=100)
+    botao_excluir_op = ctk.CTkButton(frame_acoes_op, text="Excluir", font=("Arial", 20, "bold"), width=100)
 
     # Posicionar os botões no frame_acoes lado a lado
-    botao_novo.pack(side="left", padx=5)
-    botao_alterar.pack(side="left", padx=5)
-    botao_cancelar.pack(side="left", padx=5)
-    botao_excluir.pack(side="left", padx=5)
+    botao_novo_op.pack(side="left", padx=5)
+    botao_alterar_op.pack(side="left", padx=5)
+    botao_cancelar_op.pack(side="left", padx=5)
+    botao_excluir_op.pack(side="left", padx=5)
 
     # Criar input de pesquisa
-    frame_pesquisar = ctk.CTkFrame(frame_botoes)
-    frame_pesquisar.pack()
+    frame_pesquisar_op = ctk.CTkFrame(frame_botoes_op)
+    frame_pesquisar_op.pack()
 
-    entrada_pesquisar = ctk.CTkEntry(frame_pesquisar, width=305, placeholder_text="Pesquisar Matrícula", font=("Arial", 15))
-    botao_pesquisar = ctk.CTkButton(frame_pesquisar, text="Pesquisar", font=("Arial", 20, "bold"), width=100)
+    entrada_pesquisar_op = ctk.CTkEntry(frame_pesquisar_op, width=305, placeholder_text="Pesquisar Matrícula", font=("Arial", 15))
+    botao_pesquisar_op = ctk.CTkButton(frame_pesquisar_op, text="Pesquisar", font=("Arial", 20, "bold"), width=100)
 
-    entrada_pesquisar.pack(side="left", padx=5)
-    botao_pesquisar.pack(side="left", padx=5)                
+    entrada_pesquisar_op.pack(side="left", padx=5)
+    botao_pesquisar_op.pack(side="left", padx=5)                
 
     frame_conteudo_op = ctk.CTkFrame(tab_operador)
     frame_conteudo_op.pack(expand=True, fill="both", padx=10, pady=10)
@@ -132,10 +181,10 @@ def iniciar_aplicacao():
     frame_conteudo_op.grid_rowconfigure(999, weight=1)  # Expansão vertical
     frame_conteudo_op.grid_columnconfigure(1, weight=1)  # Expansão horizontal
 
-    campos = ["Nome:", "Matrícula:", "Senha:", "Data Cadastro:", "Data Inativo:"]
+    campos_op = ["Nome:", "Matrícula:", "Senha:", "Data Cadastro:", "Data Inativo:"]
     
     entradas_op = {}
-    for i, texto in enumerate(campos):
+    for i, texto in enumerate(campos_op):
         label = ctk.CTkLabel(frame_conteudo_op, text=texto, font=("Arial", 20, "bold"))
         label.grid(row=i, column=0, sticky="w", padx=10, pady=15)
 
@@ -168,10 +217,10 @@ def iniciar_aplicacao():
     turno_var = ctk.StringVar(value="Manhã")  
 
     label_turno = ctk.CTkLabel(frame_conteudo_op, text="Turno:", font=("Arial", 20, "bold"))
-    label_turno.grid(row=len(campos)+1, column=0, sticky="w", padx=10, pady=5)
+    label_turno.grid(row=len(campos_op)+1, column=0, sticky="w", padx=10, pady=5)
 
     frame_turno = ctk.CTkFrame(frame_conteudo_op, fg_color="transparent")
-    frame_turno.grid(row=len(campos)+1, column=1, sticky="w", padx=10, pady=5)
+    frame_turno.grid(row=len(campos_op)+1, column=1, sticky="w", padx=10, pady=5)
 
     turno_manha = ctk.CTkRadioButton(frame_turno, text="Manhã", font=("Arial", 20, "bold"), variable=turno_var, value="Manhã")
     turno_tarde = ctk.CTkRadioButton(frame_turno, text="Tarde", font=("Arial", 20, "bold"), variable=turno_var, value="Tarde")
@@ -184,6 +233,22 @@ def iniciar_aplicacao():
     frame_salvar_op = ctk.CTkFrame(frame_conteudo_op, fg_color="transparent")
     frame_salvar_op.grid(row=999, column=0, columnspan=2, pady=20, sticky="sew")
 
+    def salvar_operador(entradas, label_mensagem):
+        dados = {}
+
+        for nome_campo, widget in entradas.items():
+            dados[nome_campo] = widget.get()
+        if not all(dados.values()):
+            label_mensagem.configure(text="Preencha todos os campos!", fg_color="red")
+            return
+        
+        sucesso = salvar_dados("Operadores", dados)
+
+        if sucesso:
+            label_mensagem.configure(text="Dados salvos com sucesso!", fg_color="blue")
+        else:
+            label_mensagem.configure(text="Erro ao salvar dados!", fg_color="red")
+
     # Label para mensagens de sucesso ou erro
     label_mensagem_op = ctk.CTkLabel(frame_salvar_op, text="", font=("Arial", 20))
     label_mensagem_op.pack(pady=10)
@@ -194,34 +259,34 @@ def iniciar_aplicacao():
 
     # Aba Insumos
     # Criar um frame para os botões na parte superior
-    frame_botoes = ctk.CTkFrame(tab_insumos, fg_color="transparent")
-    frame_botoes.pack(pady=10, fill="x")
+    frame_botoes_in = ctk.CTkFrame(tab_insumos, fg_color="transparent")
+    frame_botoes_in.pack(pady=10, fill="x")
 
     # Criar um subframe para os botões principais
-    frame_acoes = ctk.CTkFrame(frame_botoes)
-    frame_acoes.pack(pady=5)
+    frame_acoes_in = ctk.CTkFrame(frame_botoes_in)
+    frame_acoes_in.pack(pady=5)
 
     # Criar os botões
-    botao_novo = ctk.CTkButton(frame_acoes, text="Novo", font=("Arial", 20, "bold"), width=100)
-    botao_alterar = ctk.CTkButton(frame_acoes, text="Alterar", font=("Arial", 20, "bold"), width=100)
-    botao_cancelar = ctk.CTkButton(frame_acoes, text="Cancelar", font=("Arial", 20, "bold"), width=100)
-    botao_excluir = ctk.CTkButton(frame_acoes, text="Excluir", font=("Arial", 20, "bold"), width=100)
+    botao_novo_in = ctk.CTkButton(frame_acoes_in, text="Novo", font=("Arial", 20, "bold"), width=100)
+    botao_alterar_in = ctk.CTkButton(frame_acoes_in, text="Alterar", font=("Arial", 20, "bold"), width=100)
+    botao_cancelar_in = ctk.CTkButton(frame_acoes_in, text="Cancelar", font=("Arial", 20, "bold"), width=100)
+    botao_excluir_in = ctk.CTkButton(frame_acoes_in, text="Excluir", font=("Arial", 20, "bold"), width=100)
 
     # Posicionar os botões no frame_acoes lado a lado
-    botao_novo.pack(side="left", padx=5)
-    botao_alterar.pack(side="left", padx=5)
-    botao_cancelar.pack(side="left", padx=5)
-    botao_excluir.pack(side="left", padx=5)
+    botao_novo_in.pack(side="left", padx=5)
+    botao_alterar_in.pack(side="left", padx=5)
+    botao_cancelar_in.pack(side="left", padx=5)
+    botao_excluir_in.pack(side="left", padx=5)
 
     # Criar input de pesquisa
-    frame_pesquisar = ctk.CTkFrame(frame_botoes)
-    frame_pesquisar.pack()
+    frame_pesquisar_in = ctk.CTkFrame(frame_botoes_in)
+    frame_pesquisar_in.pack()
 
-    entrada_pesquisar = ctk.CTkEntry(frame_pesquisar, width=305, placeholder_text="Pesquisar Código", font=("Arial", 15))
-    botao_pesquisar = ctk.CTkButton(frame_pesquisar, text="Pesquisar", font=("Arial", 20, "bold"), width=100)
+    entrada_pesquisar_in = ctk.CTkEntry(frame_pesquisar_in, width=305, placeholder_text="Pesquisar Código", font=("Arial", 15))
+    botao_pesquisar_in = ctk.CTkButton(frame_pesquisar_in, text="Pesquisar", font=("Arial", 20, "bold"), width=100)
 
-    entrada_pesquisar.pack(side="left", padx=5)
-    botao_pesquisar.pack(side="left", padx=5)                
+    entrada_pesquisar_in.pack(side="left", padx=5)
+    botao_pesquisar_in.pack(side="left", padx=5)                
 
     frame_conteudo_in = ctk.CTkFrame(tab_insumos)
     frame_conteudo_in.pack(expand=True, fill="both", padx=10, pady=10)
@@ -230,7 +295,7 @@ def iniciar_aplicacao():
     frame_conteudo_in.grid_rowconfigure(999, weight=1)  # Expansão vertical
     frame_conteudo_in.grid_columnconfigure(1, weight=1)  # Expansão horizontal
 
-    campos = ["Descrição:", "Tipo:", "Data Cadastro:", "Data Inativo:", "Preço de Custo:", "Quantidade do Estoque:"]
+    campos_in = ["Descrição:", "Tipo:", "Data Cadastro:", "Data Inativo:", "Preço de Custo:", "Quantidade do Estoque:"]
     entradas_in = {}
 
     # Estado para controlar a visibilidade do menu
@@ -258,9 +323,9 @@ def iniciar_aplicacao():
             frame_opcoes.lift()  # Traz o menu para frente, sobre os demais widgets
             menu_aberto = True
 
-    for i, texto in enumerate(campos):
-        label = ctk.CTkLabel(frame_conteudo_in, text=texto, font=("Arial", 20, "bold"))
-        label.grid(row=i, column=0, sticky="w", padx=10, pady=15)
+    for i, texto in enumerate(campos_in):
+        label_in = ctk.CTkLabel(frame_conteudo_in, text=texto, font=("Arial", 20, "bold"))
+        label_in.grid(row=i, column=0, sticky="w", padx=10, pady=15)
         
         if texto == "Tipo:":
             frame_tipo = ctk.CTkFrame(frame_conteudo_in, fg_color="transparent")
@@ -293,22 +358,23 @@ def iniciar_aplicacao():
                     entrada.delete(0, "end")
                     entrada.insert(0, f"R$ {valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")) # Formato BRL
 
-            entrada = ctk.CTkEntry(frame_conteudo_in, width=600, height=30, placeholder_text="R$:")
-            entrada.bind("<KeyRelease>", lambda event, e=entrada: formatar_preco(event, e))
-            entradas_in[texto] = entrada
-            entrada.grid(row=i, column=1, sticky="w", padx=10, pady=5)
+            entrada_in = ctk.CTkEntry(frame_conteudo_in, width=600, height=30, placeholder_text="R$:")
+            entrada_in.bind("<KeyRelease>", lambda event, e=entrada_in: formatar_preco(event, e))
+            entradas_in[texto] = entrada_in
+            entrada_in.grid(row=i, column=1, sticky="w", padx=10, pady=5)
 
         elif texto in ["Data Cadastro:", "Data Inativo:"]:
-            entrada = ctk.CTkEntry(frame_conteudo_in, width=600, height=30, placeholder_text="DD/MM/AA")
-            entrada.bind("<KeyRelease>", lambda event, e=entrada: formatar_data(event, e, label_mensagem_in))
-            entradas_in[texto] = entrada
-            entrada.grid(row=i, column=1, sticky="w", padx=10, pady=5)
+            entrada_in = ctk.CTkEntry(frame_conteudo_in, width=600, height=30, placeholder_text="DD/MM/AA")
+            entrada_in.bind("<KeyRelease>", lambda event, e=entrada_in: formatar_data(event, e, label_mensagem_in))
+            entradas_in[texto] = entrada_in
+            entrada_in.grid(row=i, column=1, sticky="w", padx=10, pady=5)
 
         else:
-            entrada = ctk.CTkEntry(frame_conteudo_in, width=600, height=30, placeholder_text="Digite aqui...")
-            entradas_in[texto] = entrada
-            entrada.grid(row=i, column=1, sticky="w", padx=10, pady=5)
+            entrada_in = ctk.CTkEntry(frame_conteudo_in, width=600, height=30, placeholder_text="Digite aqui...")
+            entradas_in[texto] = entrada_in
+            entrada_in.grid(row=i, column=1, sticky="w", padx=10, pady=5)
 
+        
     frame_salvar_in = ctk.CTkFrame(frame_conteudo_in, fg_color="transparent")
     frame_salvar_in.grid(row=999, column=0, columnspan=2, pady=20, sticky="sew")
 
@@ -317,39 +383,39 @@ def iniciar_aplicacao():
     label_mensagem_in.pack(pady=10)
 
     botao_salvar_in = ctk.CTkButton(frame_salvar_in, text="Salvar", font=("Arial", 35, "bold"),
-                                  command=lambda: salvar_dados(entradas_in, label_mensagem_in))
+                                  command=lambda: salvar_operador(entradas_in, label_mensagem_in))
     botao_salvar_in.pack(pady=10, padx=10)        
         
     # Aba Cores
     # Criar um frame para os botões na parte superior
-    frame_botoes = ctk.CTkFrame(tab_cor, fg_color="transparent")
-    frame_botoes.pack(pady=10, fill="x")
+    frame_botoes_cor = ctk.CTkFrame(tab_cor, fg_color="transparent")
+    frame_botoes_cor.pack(pady=10, fill="x")
 
     # Criar um subframe para os botões principais
-    frame_acoes = ctk.CTkFrame(frame_botoes)
-    frame_acoes.pack(pady=5)
+    frame_acoes_cor = ctk.CTkFrame(frame_botoes_cor)
+    frame_acoes_cor.pack(pady=5)
 
     # Criar os botões
-    botao_novo = ctk.CTkButton(frame_acoes, text="Novo", font=("Arial", 20, "bold"), width=100)
-    botao_alterar = ctk.CTkButton(frame_acoes, text="Alterar", font=("Arial", 20, "bold"), width=100)
-    botao_cancelar = ctk.CTkButton(frame_acoes, text="Cancelar", font=("Arial", 20, "bold"), width=100)
-    botao_excluir = ctk.CTkButton(frame_acoes, text="Excluir", font=("Arial", 20, "bold"), width=100)
+    botao_novo_cor = ctk.CTkButton(frame_acoes_cor, text="Novo", font=("Arial", 20, "bold"), width=100)
+    botao_alterar_cor = ctk.CTkButton(frame_acoes_cor, text="Alterar", font=("Arial", 20, "bold"), width=100)
+    botao_cancelar_cor = ctk.CTkButton(frame_acoes_cor, text="Cancelar", font=("Arial", 20, "bold"), width=100)
+    botao_excluir_cor = ctk.CTkButton(frame_acoes_cor, text="Excluir", font=("Arial", 20, "bold"), width=100)
 
     # Posicionar os botões no frame_acoes lado a lado
-    botao_novo.pack(side="left", padx=5)
-    botao_alterar.pack(side="left", padx=5)
-    botao_cancelar.pack(side="left", padx=5)
-    botao_excluir.pack(side="left", padx=5)
+    botao_novo_cor.pack(side="left", padx=5)
+    botao_alterar_cor.pack(side="left", padx=5)
+    botao_cancelar_cor.pack(side="left", padx=5)
+    botao_excluir_cor.pack(side="left", padx=5)
 
     # Criar input de pesquisa
-    frame_pesquisar = ctk.CTkFrame(frame_botoes)
-    frame_pesquisar.pack()
+    frame_pesquisar_cor = ctk.CTkFrame(frame_botoes_cor)
+    frame_pesquisar_cor.pack()
 
-    entrada_pesquisar = ctk.CTkEntry(frame_pesquisar, width=305, placeholder_text="Pesquisar Cor", font=("Arial", 15))
-    botao_pesquisar = ctk.CTkButton(frame_pesquisar, text="Pesquisar", font=("Arial", 20, "bold"), width=100)
+    entrada_pesquisar_cor = ctk.CTkEntry(frame_pesquisar_cor, width=305, placeholder_text="Pesquisar Cor", font=("Arial", 15))
+    botao_pesquisar_cor = ctk.CTkButton(frame_pesquisar_cor, text="Pesquisar", font=("Arial", 20, "bold"), width=100)
 
-    entrada_pesquisar.pack(side="left", padx=5)
-    botao_pesquisar.pack(side="left", padx=5)                
+    entrada_pesquisar_cor.pack(side="left", padx=5)
+    botao_pesquisar_cor.pack(side="left", padx=5)                
         
     # Criação dos subframes, todos ainda vinculados ao tab_cor
     frame_conteudo_cor = ctk.CTkFrame(tab_cor)
@@ -383,23 +449,23 @@ def iniciar_aplicacao():
     ]
     entradas_cor = {}
 
-    label = ctk.CTkLabel(frame_linha_unica, text="Descrição:", font=("Arial", 20, "bold"))
-    label.grid(row=0, column=0, sticky="w", padx=10, pady=10)
+    label_cor = ctk.CTkLabel(frame_linha_unica, text="Descrição:", font=("Arial", 20, "bold"))
+    label_cor.grid(row=0, column=0, sticky="w", padx=10, pady=10)
 
-    entrada = ctk.CTkEntry(frame_linha_unica, width=600, height=30, placeholder_text="Digite aqui...")
-    entrada.grid(row=0, column=1, sticky="w", padx=50, pady=5)
-    entradas_cor["Descrição"] = entrada
+    entrada_cor = ctk.CTkEntry(frame_linha_unica, width=600, height=30, placeholder_text="Digite aqui...")
+    entrada_cor.grid(row=0, column=1, sticky="w", padx=50, pady=5)
+    entradas_cor["Descrição"] = entrada_cor
 
     # Adicionando campos paralelos
     row_index = 0
     for i, linha in enumerate(campos_paralelos_cor):
         for j, texto in enumerate(linha):
-            label = ctk.CTkLabel(frame_paralelo, text=texto, font=("Arial", 20, "bold"))
-            label.grid(row=row_index, column=j * 2, sticky="w", padx=10, pady=5)
+            label_cor = ctk.CTkLabel(frame_paralelo, text=texto, font=("Arial", 20, "bold"))
+            label_cor.grid(row=row_index, column=j * 2, sticky="w", padx=10, pady=5)
             
-            entrada = ctk.CTkEntry(frame_paralelo, width=370, height=30, placeholder_text="Digite aqui...")
-            entrada.grid(row=row_index + 1, column=j * 2, sticky="w", padx=10, pady=5)
-            entradas_cor[texto] = entrada
+            entrada_cor = ctk.CTkEntry(frame_paralelo, width=370, height=30, placeholder_text="Digite aqui...")
+            entrada_cor.grid(row=row_index + 1, column=j * 2, sticky="w", padx=10, pady=5)
+            entradas_cor[texto] = entrada_cor
     
         row_index += 2  # Incrementar para manter espaço entre linhas
     
@@ -407,18 +473,18 @@ def iniciar_aplicacao():
     for i, linha in enumerate(campos_cor):
         if len(linha) == 1:
             texto = linha[0]
-            label = ctk.CTkLabel(frame_ultimo, text=texto, font=("Arial", 20, "bold"))
-            label.grid(row=i, column=0, sticky="w", padx=10, pady=5)
+            label_cor = ctk.CTkLabel(frame_ultimo, text=texto, font=("Arial", 20, "bold"))
+            label_cor.grid(row=i, column=0, sticky="w", padx=10, pady=5)
             
             largura = 600
             placeholder = "DD/MM/AA" if "Data" in texto else "Digite aqui..."
             
-            entrada = ctk.CTkEntry(frame_ultimo, width=largura, height=30, placeholder_text=placeholder)
+            entrada_cor = ctk.CTkEntry(frame_ultimo, width=largura, height=30, placeholder_text=placeholder)
             if "Data" in texto:
-                entrada.bind("<KeyRelease>", lambda event, e=entrada: formatar_data(event, e, label_mensagem_cor))
+                entrada_cor.bind("<KeyRelease>", lambda event, e=entrada_cor: formatar_data(event, e, label_mensagem_cor))
             
-            entrada.grid(row=i, column=1, sticky="w", padx=10, pady=5)
-            entradas_cor[texto] = entrada
+            entrada_cor.grid(row=i, column=1, sticky="w", padx=10, pady=5)
+            entradas_cor[texto] = entrada_cor
 
     frame_salvar_cor = ctk.CTkFrame(frame_conteudo_cor, fg_color="transparent")
     frame_salvar_cor.grid(row=999, column=0, columnspan=2, pady=20, sticky="sew"),
@@ -433,34 +499,34 @@ def iniciar_aplicacao():
    
     # Aba Artigos
     # Criar um frame para os botões na parte superior
-    frame_botoes = ctk.CTkFrame(tab_artigos, fg_color="transparent")
-    frame_botoes.pack(pady=10, fill="x")
+    frame_botoes_art = ctk.CTkFrame(tab_artigos, fg_color="transparent")
+    frame_botoes_art.pack(pady=10, fill="x")
 
     # Criar um subframe para os botões principais
-    frame_acoes = ctk.CTkFrame(frame_botoes)
-    frame_acoes.pack(pady=5)
+    frame_acoes_art = ctk.CTkFrame(frame_botoes_art)
+    frame_acoes_art.pack(pady=5)
 
     # Criar os botões
-    botao_novo = ctk.CTkButton(frame_acoes, text="Novo", font=("Arial", 20, "bold"), width=100)
-    botao_alterar = ctk.CTkButton(frame_acoes, text="Alterar", font=("Arial", 20, "bold"), width=100)
-    botao_cancelar = ctk.CTkButton(frame_acoes, text="Cancelar", font=("Arial", 20, "bold"), width=100)
-    botao_excluir = ctk.CTkButton(frame_acoes, text="Excluir", font=("Arial", 20, "bold"), width=100)
+    botao_novo_art = ctk.CTkButton(frame_acoes_art, text="Novo", font=("Arial", 20, "bold"), width=100)
+    botao_alterar_art = ctk.CTkButton(frame_acoes_art, text="Alterar", font=("Arial", 20, "bold"), width=100)
+    botao_cancelar_art = ctk.CTkButton(frame_acoes_art, text="Cancelar", font=("Arial", 20, "bold"), width=100)
+    botao_excluir_art = ctk.CTkButton(frame_acoes_art, text="Excluir", font=("Arial", 20, "bold"), width=100)
 
     # Posicionar os botões no frame_acoes lado a lado
-    botao_novo.pack(side="left", padx=5)
-    botao_alterar.pack(side="left", padx=5)
-    botao_cancelar.pack(side="left", padx=5)
-    botao_excluir.pack(side="left", padx=5)
+    botao_novo_art.pack(side="left", padx=5)
+    botao_alterar_art.pack(side="left", padx=5)
+    botao_cancelar_art.pack(side="left", padx=5)
+    botao_excluir_art.pack(side="left", padx=5)
 
     # Criar input de pesquisa
-    frame_pesquisar = ctk.CTkFrame(frame_botoes)
-    frame_pesquisar.pack()
+    frame_pesquisar_art = ctk.CTkFrame(frame_botoes_art)
+    frame_pesquisar_art.pack()
 
-    entrada_pesquisar = ctk.CTkEntry(frame_pesquisar, width=305, placeholder_text="Pesquisar Artigo", font=("Arial", 15))
-    botao_pesquisar = ctk.CTkButton(frame_pesquisar, text="Pesquisar", font=("Arial", 20, "bold"), width=100)
+    entrada_pesquisar_art = ctk.CTkEntry(frame_pesquisar_art, width=305, placeholder_text="Pesquisar Artigo", font=("Arial", 15))
+    botao_pesquisar_art = ctk.CTkButton(frame_pesquisar_art, text="Pesquisar", font=("Arial", 20, "bold"), width=100)
 
-    entrada_pesquisar.pack(side="left", padx=5)
-    botao_pesquisar.pack(side="left", padx=5)                
+    entrada_pesquisar_art.pack(side="left", padx=5)
+    botao_pesquisar_art.pack(side="left", padx=5)                
 
     frame_conteudo_art = ctk.CTkFrame(tab_artigos)
     frame_conteudo_art.pack(expand=True, fill="both", padx=10, pady=10)
@@ -469,22 +535,22 @@ def iniciar_aplicacao():
     frame_conteudo_art.grid_rowconfigure(999, weight=1)  # Expansão vertical
     frame_conteudo_art.grid_columnconfigure(1, weight=1)  # Expansão horizontal
 
-    campos = ["Descrição:", "Data Cadastro:", "Data Inativo:"]
+    campos_art = ["Descrição:", "Data Cadastro:", "Data Inativo:"]
     entradas_art = {}
 
-    for i, texto in enumerate(campos):
-        label = ctk.CTkLabel(frame_conteudo_art, text=texto, font=("Arial", 20, "bold"))
-        label.grid(row=i+1, column=0, sticky="w", padx=10, pady=15)
+    for i, texto in enumerate(campos_art):
+        label_art = ctk.CTkLabel(frame_conteudo_art, text=texto, font=("Arial", 20, "bold"))
+        label_art.grid(row=i+1, column=0, sticky="w", padx=10, pady=15)
         
         if texto in ["Data Cadastro:", "Data Inativo:"]:
-            entrada = ctk.CTkEntry(frame_conteudo_art, width=600, height=30, placeholder_text="DD/MM/AA")
-            entrada.bind("<KeyRelease>", lambda event, e=entrada: formatar_data(event, e, label_mensagem_art))
-            entradas_art[texto] = entrada
-            entrada.grid(row=i+1, column=1, sticky="w", padx=10, pady=5)
+            entrada_art = ctk.CTkEntry(frame_conteudo_art, width=600, height=30, placeholder_text="DD/MM/AA")
+            entrada_art.bind("<KeyRelease>", lambda event, e=entrada_art: formatar_data(event, e, label_mensagem_art))
+            entradas_art[texto] = entrada_art
+            entrada_art.grid(row=i+1, column=1, sticky="w", padx=10, pady=5)
         else:
-            entrada = ctk.CTkEntry(frame_conteudo_art, width=600, height=30, placeholder_text="Digite aqui...")
-            entradas_art[texto] = entrada
-            entrada.grid(row=i+1, column=1, sticky="w", padx=10, pady=5)
+            entrada_art = ctk.CTkEntry(frame_conteudo_art, width=600, height=30, placeholder_text="Digite aqui...")
+            entradas_art[texto] = entrada_art
+            entrada_art.grid(row=i+1, column=1, sticky="w", padx=10, pady=5)
 
     # Frame para o botão "salvar"
     frame_salvar_art = ctk.CTkFrame(frame_conteudo_art, fg_color="transparent")
