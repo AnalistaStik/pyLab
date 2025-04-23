@@ -1,4 +1,5 @@
-import datetime, os, re, sys, subprocess, pyodbc, datetime, pyodbc
+import os, re, sys, subprocess, pyodbc, pyodbc
+from datetime import datetime
 
 if getattr(sys, "frozen", False):
     sys.path.append(os.path.join(sys._MEIPASS, "customtkinter"))
@@ -9,54 +10,14 @@ import customtkinter as ctk
 ctk.set_appearance_mode("Dark")  # Modo de aparência (System, Dark, Light)
 ctk.set_default_color_theme("blue")  # Tema de cores padrão
 
-def create_connection(): 
-    server = "168.190.30.2"
-    database = "Teste_Gabriel"
-    username = "sa"
-    password = "Stik0123"
 
-    connection_string = (
-        f'DRIVER={{SQL Server}};SERVER={server};DATABASE={database};'
-        f'UID={username};PWD={password}'
-    )
-
-    try:
-        conn = pyodbc.connect(connection_string)
-        print("Conexão Estabelecida!")
-        return conn
-    except pyodbc.Error as e:
-        print(f'Erro ao conectar ao banco de dados: {str(e)}')
-        return None
-
-def salvar_dados(tabela, entradas):
-    conn = create_connection()
-    if not entradas:
-        return 
-    
-    try:
-        cursor = conn.cursor()
-
-        colunas =  ', '.join(entradas.keys())
-        placeholders = ', '.join(['?' for _ in entradas])
-        query = f"INSERT INTO {tabela} ({colunas}) VALUE({placeholders})"
-
-        cursor.execute(query, tuple(entradas.values()))
-        conn.commit()
-        print(f"Dados inseridos na tabela {tabela} com sucesso!")
-
-    except Exception as e:
-        print(f"Erro ao inserir na tabela {tabela}:", e)
-    
-    finally:
-        cursor.close()
-        conn.close()
 
 def formatar_data(event, entry, label_mensagem):
     texto = entry.get().replace("/", "")
     novo_texto = ""
 
     # Obtém o ano atual do sistema 
-    ano_atual = datetime.datetime.now().year
+    ano_atual = datetime.now().year
 
     # Limita a entrada a no máximo 8 dígitos numéricos
     texto = texto[:8]
@@ -77,7 +38,7 @@ def formatar_data(event, entry, label_mensagem):
             if ano > ano_atual:
                 raise ValueError("Ano inválido")
             
-            datetime.date(ano, mes, dia) # Tenta criar uma data válida
+            datetime(ano, mes, dia).date() # Tenta criar uma data válida
             label_mensagem.configure(text="", text_color="red")
 
         except ValueError:
@@ -109,6 +70,71 @@ def formatar_data(event, entry, label_mensagem):
 # Iniciar aplicação após login
 def iniciar_aplicacao():
     global label_mensagem, entradas
+# Função para buscar o operador no banco de dados
+    def buscar_operador():    
+        try:
+            campo_pesquisa = entrada_pesquisar_op.get().strip()             
+
+            conn = pyodbc.connect(
+                "DRIVER={ODBC Driver 17 for SQL Server};SERVER=168.190.30.2;DATABASE=Teste_Gabriel;UID=sa;PWD=Stik0123"
+            )
+            cursor = conn.cursor()
+
+            query = "SELECT * FROM Operador WHERE ID = ?"
+            cursor.execute(query, (campo_pesquisa,))
+            resultado = cursor.fetchone()
+
+            if resultado:
+                label_mensagem_op.configure(text="Operador encontrado.", text_color="blue")
+                dados_pesquisados_operador(resultado)
+            else:
+                label_mensagem_op.configure(text="Nenhum operador encontrado.", text_color="red")
+
+            conn.close()
+
+        except pyodbc.Error as e:
+            label_mensagem_op.configure(text="Erro ao pesquisar operador.", text_color="red")
+            print(str(e))
+
+# Função que preenche os campos com os dados do operador encontrado
+    def dados_pesquisados_operador(resultado):
+        for entrada in entradas_op.values():
+            entrada.configure(state="normal")  # Habilita os campos após a pesquisa
+        for botao in turnos_botoes.values():
+            botao.configure(state="normal") # Habilita os botões de turno após a pesquisa
+        
+        entradas_op["Matrícula:"].delete(0, "end")
+        entradas_op["Matrícula:"].insert(0, resultado[0])
+
+        entradas_op["Nome:"].delete(0, "end")
+        entradas_op["Nome:"].insert(0, resultado[1])
+
+        entradas_op["Senha:"].delete(0, "end")
+        entradas_op["Senha:"].insert(0, resultado[2])
+
+        entradas_op["Data Cadastro:"].delete(0, "end")
+        entradas_op["Data Cadastro:"].insert(0, resultado[3].strftime("%d/%m/%y") if resultado[3] else "")
+
+        entradas_op["Data Inativo:"].delete(0, "end")
+        entradas_op["Data Inativo:"].insert(0, resultado[4].strftime("%d/%m/%y") if resultado[4] else "")
+
+        # Mapear o turno de volta para string
+        turno_valor = int(resultado[5]) if resultado[5] is not None else None
+
+        if turno_valor == 1:
+            turno_var.set("Manhã")
+        elif turno_valor == 2:
+            turno_var.set("Tarde")
+        elif turno_valor == 3:
+            turno_var.set("Noite")
+        else:
+            turno_var.set("")  # caso o valor não exista
+
+        for entrada in entradas_op.values():
+            entrada.configure(state="disabled")  # Desabilita os campos após a pesquisa
+        for botao in turnos_botoes.values():
+            botao.configure(state="disabled") # Desabilita os botões de turno após a pesquisa
+        botao_senha.configure(state="disabled") # Desabilita o botão de senha após a pesquisa
 
     def atualizar_programa(event=None):
         """Reinicia a aplicação executanto novamente o script."""
@@ -144,6 +170,22 @@ def iniciar_aplicacao():
     tab_artigos = tabview.add("Artigos")
    
     # Aba Operadores
+    def novo_operador():
+        for campo, entrada in entradas_op.items():
+            entrada.configure(state="normal") # Habilita os campos para edição
+            entrada.delete(0, "end")
+            if "Data" in campo:
+                entrada.configure(placeholder_text="DD/MM/AA")
+            else:
+                entrada.configure(placeholder_text="Digite aqui...")    
+       
+        for botao in turnos_botoes.values():
+            botao.configure(state="normal") # Habilita os botões de turno para edição    
+        botao_senha.configure(state="normal") # Habilita o botão de senha para edição
+        turno_var.set("Manhã")  # Reseta o valor do botão de opção  
+        label_mensagem_op.configure(text="", text_color="red") # Limpa mensagens de erro ou sucesso
+
+
     # Criar um frame para os botões na parte superior
     frame_botoes_op = ctk.CTkFrame(tab_operador, fg_color="transparent")
     frame_botoes_op.pack(pady=10, fill="x")
@@ -153,7 +195,7 @@ def iniciar_aplicacao():
     frame_acoes_op.pack(pady=5)
 
     # Criar os botões
-    botao_novo_op = ctk.CTkButton(frame_acoes_op, text="Novo", font=("Arial", 20, "bold"), width=100)
+    botao_novo_op = ctk.CTkButton(frame_acoes_op, text="Novo", font=("Arial", 20, "bold"), width=100, command=novo_operador) 
     botao_alterar_op = ctk.CTkButton(frame_acoes_op, text="Alterar", font=("Arial", 20, "bold"), width=100)
     botao_cancelar_op = ctk.CTkButton(frame_acoes_op, text="Cancelar", font=("Arial", 20, "bold"), width=100)
     botao_excluir_op = ctk.CTkButton(frame_acoes_op, text="Excluir", font=("Arial", 20, "bold"), width=100)
@@ -169,11 +211,12 @@ def iniciar_aplicacao():
     frame_pesquisar_op.pack()
 
     entrada_pesquisar_op = ctk.CTkEntry(frame_pesquisar_op, width=305, placeholder_text="Pesquisar Matrícula", font=("Arial", 15))
-    botao_pesquisar_op = ctk.CTkButton(frame_pesquisar_op, text="Pesquisar", font=("Arial", 20, "bold"), width=100)
+    botao_pesquisar_op = ctk.CTkButton(frame_pesquisar_op, text="Pesquisar", font=("Arial", 20, "bold"), width=100,
+                                        command=buscar_operador)
 
     entrada_pesquisar_op.pack(side="left", padx=5)
     botao_pesquisar_op.pack(side="left", padx=5)                
-
+    
     frame_conteudo_op = ctk.CTkFrame(tab_operador)
     frame_conteudo_op.pack(expand=True, fill="both", padx=10, pady=10)
 
@@ -181,7 +224,7 @@ def iniciar_aplicacao():
     frame_conteudo_op.grid_rowconfigure(999, weight=1)  # Expansão vertical
     frame_conteudo_op.grid_columnconfigure(1, weight=1)  # Expansão horizontal
 
-    campos_op = ["Nome:", "Matrícula:", "Senha:", "Data Cadastro:", "Data Inativo:"]
+    campos_op = ["Matrícula:", "Nome:", "Senha:", "Data Cadastro:", "Data Inativo:"]
     
     entradas_op = {}
     for i, texto in enumerate(campos_op):
@@ -222,40 +265,73 @@ def iniciar_aplicacao():
     frame_turno = ctk.CTkFrame(frame_conteudo_op, fg_color="transparent")
     frame_turno.grid(row=len(campos_op)+1, column=1, sticky="w", padx=10, pady=5)
 
-    turno_manha = ctk.CTkRadioButton(frame_turno, text="Manhã", font=("Arial", 20, "bold"), variable=turno_var, value="Manhã")
-    turno_tarde = ctk.CTkRadioButton(frame_turno, text="Tarde", font=("Arial", 20, "bold"), variable=turno_var, value="Tarde")
-    turno_noite = ctk.CTkRadioButton(frame_turno, text="Noite", font=("Arial", 20, "bold"), variable=turno_var, value="Noite")
+    turnos_botoes = {
+        "Manhã": ctk.CTkRadioButton(frame_turno, text="Manhã", font=("Arial", 20, "bold"), variable=turno_var, value="Manhã"),
+        "Tarde": ctk.CTkRadioButton(frame_turno, text="Tarde", font=("Arial", 20, "bold"), variable=turno_var, value="Tarde"),
+        "Noite": ctk.CTkRadioButton(frame_turno, text="Noite", font=("Arial", 20, "bold"), variable=turno_var, value="Noite")
+    }
 
-    turno_manha.pack(side="left", padx=15)
-    turno_tarde.pack(side="left", padx=15)
-    turno_noite.pack(side="left", padx=15)
+    for botao in turnos_botoes.values():
+        botao.pack(side="left", padx=15)
+
+    def salvar_operador(entradas_op, turno_var, label_mensagem_op):
+        """Salva os dados do operador no banco de dados."""
+        try:
+            # Obter valores dos campos de entrada
+            matricula = entradas_op["Matrícula:"].get().strip()
+            nome = entradas_op["Nome:"].get().strip()
+            senha = entradas_op["Senha:"].get().strip()
+            data_cadastro = entradas_op["Data Cadastro:"].get().strip()
+            data_inativo = entradas_op["Data Inativo:"].get().strip()
+
+            turno_selecionado = turno_var.get()
+            turno_dict = {"Manhã": 1, "Tarde": 2, "Noite": 3}
+            turno_int = turno_dict.get(turno_selecionado, 0) # Obtém o número do turno
+            
+            # Criar conexão com o banco de dados
+            conn = pyodbc.connect(
+                "DRIVER={ODBC Driver 17 for SQL Server};SERVER=168.190.30.2;DATABASE=Teste_Gabriel;UID=sa;PWD=Stik0123"
+            )
+            cursor = conn.cursor()
+
+            # Conversões de tipo
+            try:
+                matricula = int(matricula) if matricula else None  # Converte para INT se não estiver vazio
+            except ValueError:
+                label_mensagem_op.configure(text="Erro: Matricula deve ser um número inteiro.", text_color="red")
+
+            try:
+                data_cadastro = datetime.strptime(data_cadastro, "%d/%m/%y").date() if data_cadastro else None
+                data_inativo = datetime.strptime(data_inativo, "%d/%m/%y").date() if data_inativo else None
+            except ValueError:
+                label_mensagem_op.configure(text="Erro: Data deve estar no formato DD/MM/AA.", text_color="red")
+
+            # Query SQL para inserir dados
+            query = """
+                    INSERT INTO Operador (ID, Descricao, Senha, DataCadastro, DataInativo, Turno)
+                    VALUES (?, ?, ?, ?, ?, ?)"""
+
+            # Executar a query
+            cursor.execute(query, (matricula, nome, senha, data_cadastro, data_inativo, turno_int))
+            conn.commit()
+
+            label_mensagem_op.configure(text="Operador registrado", text_color="blue")
+
+        except pyodbc.Error as e:
+            label_mensagem_op.configure(text=f"Erro ao inserir operador", text_color="red")
+            print(str(e))
+
 
     frame_salvar_op = ctk.CTkFrame(frame_conteudo_op, fg_color="transparent")
     frame_salvar_op.grid(row=999, column=0, columnspan=2, pady=20, sticky="sew")
-
-    def salvar_operador(entradas, label_mensagem):
-        dados = {}
-
-        for nome_campo, widget in entradas.items():
-            dados[nome_campo] = widget.get()
-        if not all(dados.values()):
-            label_mensagem.configure(text="Preencha todos os campos!", fg_color="red")
-            return
-        
-        sucesso = salvar_dados("Operadores", dados)
-
-        if sucesso:
-            label_mensagem.configure(text="Dados salvos com sucesso!", fg_color="blue")
-        else:
-            label_mensagem.configure(text="Erro ao salvar dados!", fg_color="red")
 
     # Label para mensagens de sucesso ou erro
     label_mensagem_op = ctk.CTkLabel(frame_salvar_op, text="", font=("Arial", 20))
     label_mensagem_op.pack(pady=10)
 
     botao_salvar_op = ctk.CTkButton(frame_salvar_op, text="Salvar", font=("Arial", 35, "bold"), 
-                                 command=lambda: salvar_dados(entradas_op, label_mensagem_op))
-    botao_salvar_op.pack(pady=10, padx=10)        
+                                 command=lambda: salvar_operador(entradas_op, turno_var, label_mensagem_op))
+    botao_salvar_op.pack(pady=10, padx=10)  
 
     # Aba Insumos
     # Criar um frame para os botões na parte superior
@@ -493,9 +569,9 @@ def iniciar_aplicacao():
     label_mensagem_cor = ctk.CTkLabel(frame_salvar_cor, text="", font=("Arial", 20))
     label_mensagem_cor.pack(pady=10)
  
-    botao_salvar_cor = ctk.CTkButton(frame_salvar_cor, text="Salvar", font=("Arial", 35, "bold"),
-                                  command=lambda: salvar_dados(entradas_cor, label_mensagem_cor))
-    botao_salvar_cor.pack(pady=10, padx=10)        
+    # botao_salvar_cor = ctk.CTkButton(frame_salvar_cor, text="Salvar", font=("Arial", 35, "bold"),
+    #                               command=lambda: salvar_dados(entradas_cor, label_mensagem_cor))
+    # botao_salvar_cor.pack(pady=10, padx=10)        
    
     # Aba Artigos
     # Criar um frame para os botões na parte superior
@@ -560,9 +636,9 @@ def iniciar_aplicacao():
     label_mensagem_art = ctk.CTkLabel(frame_salvar_art, text="", font=("Arial", 20))
     label_mensagem_art.pack(pady=10)
 
-    botao_salvar_art = ctk.CTkButton(frame_salvar_art, text="Salvar", font=("Arial", 35, "bold"),
-                                  command=lambda: salvar_dados(entradas_art, label_mensagem_art))
-    botao_salvar_art.pack(pady=10, padx=10)        
+    # botao_salvar_art = ctk.CTkButton(frame_salvar_art, text="Salvar", font=("Arial", 35, "bold"),
+    #                               command=lambda: salvar_dados(entradas_art, label_mensagem_art))
+    # botao_salvar_art.pack(pady=10, padx=10)        
 
     # Executar Aplicação
     janela.mainloop()
