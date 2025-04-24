@@ -1,4 +1,4 @@
-import os, re, sys, subprocess, pyodbc, pyodbc
+import os, re, sys, subprocess, pyodbc, pyodbc, time
 from datetime import datetime
 
 if getattr(sys, "frozen", False):
@@ -10,17 +10,20 @@ import customtkinter as ctk
 ctk.set_appearance_mode("Dark")  # Modo de aparência (System, Dark, Light)
 ctk.set_default_color_theme("blue")  # Tema de cores padrão
 
-
+def mostrar_mensagem_temporaria(label, texto, cor="blue", tempo=3000):
+    """Mostra uma mensagem temporária em um label."""
+    label.configure(text=texto, text_color=cor)
+    label.after(tempo, lambda: label.configure(text=""))
 
 def formatar_data(event, entry, label_mensagem):
     texto = entry.get().replace("/", "")
     novo_texto = ""
 
     # Obtém o ano atual do sistema 
-    ano_atual = datetime.now().year
+    ano_atual = datetime.now().year % 100 # Obtém os dois últimos dígitos do ano atual
 
-    # Limita a entrada a no máximo 8 dígitos numéricos
-    texto = texto[:8]
+    # Limita a entrada a no máximo 6 dígitos numéricos
+    texto = texto[:6]
 
     for i, char in enumerate(texto):
         if i in [2, 4]:
@@ -31,7 +34,7 @@ def formatar_data(event, entry, label_mensagem):
     entry.insert(0, novo_texto)
 
     # Validação da data
-    if len(texto) == 8:
+    if len(texto) == 6:
         try:
             dia, mes, ano = int(texto[:2]), int(texto[2:4]) , int(texto[4:])
 
@@ -42,7 +45,7 @@ def formatar_data(event, entry, label_mensagem):
             label_mensagem.configure(text="", text_color="red")
 
         except ValueError:
-            label_mensagem.configure(text="Data Inválida! Insira um valor correto.", text_color="red")
+            mostrar_mensagem_temporaria(label_mensagem, "Data Inválida! Insira um valor correto.", "red")
          
 # def atualizar_sistema():
 #     hora_atual = datetime.now()
@@ -85,15 +88,15 @@ def iniciar_aplicacao():
             resultado = cursor.fetchone()
 
             if resultado:
-                label_mensagem_op.configure(text="Operador encontrado.", text_color="blue")
+                mostrar_mensagem_temporaria(label_mensagem_op, "Operador encontrado.", "blue")
                 dados_pesquisados_operador(resultado)
             else:
-                label_mensagem_op.configure(text="Nenhum operador encontrado.", text_color="red")
-
+                mostrar_mensagem_temporaria(label_mensagem_op, "Nenhum operador encontrado.", "red")
             conn.close()
 
+
         except pyodbc.Error as e:
-            label_mensagem_op.configure(text="Erro ao pesquisar operador.", text_color="red")
+            mostrar_mensagem_temporaria(label_mensagem_op, "Erro ao pesquisar operador.", "red")
             print(str(e))
 
 # Função que preenche os campos com os dados do operador encontrado
@@ -109,6 +112,7 @@ def iniciar_aplicacao():
         entradas_op["Nome:"].delete(0, "end")
         entradas_op["Nome:"].insert(0, resultado[1])
 
+        entrada_senha.configure(show="*") # Mantém a senha oculta
         entradas_op["Senha:"].delete(0, "end")
         entradas_op["Senha:"].insert(0, resultado[2])
 
@@ -165,13 +169,14 @@ def iniciar_aplicacao():
 
     # Abas
     tab_operador = tabview.add("Operador")
-    tab_insumos = tabview.add("Insumos")
+    tab_insumos = tabview.add("Cadastro")
     tab_cor = tabview.add("Cor")
     tab_artigos = tabview.add("Artigos")
    
     # Aba Operadores
     def novo_operador():
         for campo, entrada in entradas_op.items():
+            janela.focus()
             entrada.configure(state="normal") # Habilita os campos para edição
             entrada.delete(0, "end")
             if "Data" in campo:
@@ -179,11 +184,27 @@ def iniciar_aplicacao():
             else:
                 entrada.configure(placeholder_text="Digite aqui...")    
        
-        for botao in turnos_botoes.values():
-            botao.configure(state="normal") # Habilita os botões de turno para edição    
-        botao_senha.configure(state="normal") # Habilita o botão de senha para edição
-        turno_var.set("Manhã")  # Reseta o valor do botão de opção  
-        label_mensagem_op.configure(text="", text_color="red") # Limpa mensagens de erro ou sucesso
+            for botao in turnos_botoes.values():
+                botao.configure(state="normal") # Habilita os botões de turno para edição    
+            botao_senha.configure(state="normal") # Habilita o botão de senha para edição
+            turno_var.set("Manhã")  # Reseta o valor do botão de opção  
+            label_mensagem_op.configure(text="", text_color="red") # Limpa mensagens de erro ou sucesso
+    
+    def cancelar_operador():
+            for campo, entrada in entradas_op.items():
+                janela.focus()
+                entrada.configure(state="normal") # Habilita os campos para edição
+                entrada.delete(0, "end")
+                if "Data" in campo:
+                    entrada.configure(placeholder_text="DD/MM/AA")
+                else:
+                    entrada.configure(placeholder_text="Digite aqui...")    
+        
+                for botao in turnos_botoes.values():
+                    botao.configure(state="normal") # Habilita os botões de turno para edição    
+                botao_senha.configure(state="normal") # Habilita o botão de senha para edição
+                turno_var.set("Manhã")  # Reseta o valor do botão de opção  
+                label_mensagem_op.configure(text="", text_color="red") # Limpa mensagens de erro ou sucesso
 
 
     # Criar um frame para os botões na parte superior
@@ -197,7 +218,7 @@ def iniciar_aplicacao():
     # Criar os botões
     botao_novo_op = ctk.CTkButton(frame_acoes_op, text="Novo", font=("Arial", 20, "bold"), width=100, command=novo_operador) 
     botao_alterar_op = ctk.CTkButton(frame_acoes_op, text="Alterar", font=("Arial", 20, "bold"), width=100)
-    botao_cancelar_op = ctk.CTkButton(frame_acoes_op, text="Cancelar", font=("Arial", 20, "bold"), width=100)
+    botao_cancelar_op = ctk.CTkButton(frame_acoes_op, text="Cancelar", font=("Arial", 20, "bold"), width=100, command=cancelar_operador)
     botao_excluir_op = ctk.CTkButton(frame_acoes_op, text="Excluir", font=("Arial", 20, "bold"), width=100)
 
     # Posicionar os botões no frame_acoes lado a lado
@@ -298,13 +319,13 @@ def iniciar_aplicacao():
             try:
                 matricula = int(matricula) if matricula else None  # Converte para INT se não estiver vazio
             except ValueError:
-                label_mensagem_op.configure(text="Erro: Matricula deve ser um número inteiro.", text_color="red")
+                mostrar_mensagem_temporaria(label_mensagem_op, "Erro: Matricula deve ser um número inteiro.", "red")
 
             try:
                 data_cadastro = datetime.strptime(data_cadastro, "%d/%m/%y").date() if data_cadastro else None
                 data_inativo = datetime.strptime(data_inativo, "%d/%m/%y").date() if data_inativo else None
             except ValueError:
-                label_mensagem_op.configure(text="Erro: Data deve estar no formato DD/MM/AA.", text_color="red")
+                mostrar_mensagem_temporaria(label_mensagem_op, "Erro: Data deve estar no formato DD/MM/AA.", "red")
 
             # Query SQL para inserir dados
             query = """
@@ -315,10 +336,10 @@ def iniciar_aplicacao():
             cursor.execute(query, (matricula, nome, senha, data_cadastro, data_inativo, turno_int))
             conn.commit()
 
-            label_mensagem_op.configure(text="Operador registrado", text_color="blue")
+            mostrar_mensagem_temporaria(label_mensagem_op, "Operador registrado", "blue")
 
         except pyodbc.Error as e:
-            label_mensagem_op.configure(text=f"Erro ao inserir operador", text_color="red")
+            mostrar_mensagem_temporaria(label_mensagem_op, "Erro ao inserir operador", "red")
             print(str(e))
 
 
@@ -371,7 +392,7 @@ def iniciar_aplicacao():
     frame_conteudo_in.grid_rowconfigure(999, weight=1)  # Expansão vertical
     frame_conteudo_in.grid_columnconfigure(1, weight=1)  # Expansão horizontal
 
-    campos_in = ["Descrição:", "Tipo:", "Data Cadastro:", "Data Inativo:", "Preço de Custo:", "Quantidade do Estoque:"]
+    campos_in = ["Descrição:", "Tipo:", "Data Cadastro:", "Data Inativo:"]
     entradas_in = {}
 
     # Estado para controlar a visibilidade do menu
@@ -384,6 +405,25 @@ def iniciar_aplicacao():
         entrada_tipo.insert(0, opcao)
         entrada_tipo.configure(state="readonly")
         toggle_menu()  # Fecha o menu após a seleção
+
+        if opcao == "Corante":
+            # Adiciona um novo label e input para "G/L:"
+            label_gl = ctk.CTkLabel(frame_conteudo_in, text="G/L:", font=("Arial", 20, "bold"))
+            label_gl.grid(row=len(campos_in), column=0, sticky="w", padx=10, pady=15)
+
+            entrada_gl = ctk.CTkEntry(frame_conteudo_in, width=600, height=30, placeholder_text="Digite aqui...")
+            entrada_gl.grid(row=len(campos_in), column=1, sticky="w", padx=10, pady=5)
+
+            # Adiciona o novo campo ao dicionário de entradas
+            entradas_in["G/L:"] = entrada_gl
+            entradas_in["G/L_label"] = label_gl
+        else:
+            # Remove o label e input "G/L:" se a opção não for "Corante"
+            if "G/L:" in entradas_in:
+                entradas_in["G/L:"].grid_forget()
+                entradas_in["G/L_label"].grid_forget()
+                del entradas_in["G/L:"]
+                del entradas_in["G/L_label"]
 
     # Função para abrir/fechar o menu suspenso (toggle)
     def toggle_menu():
@@ -420,7 +460,7 @@ def iniciar_aplicacao():
             frame_opcoes.place_forget()
 
             # Opções do menu suspenso
-            opcoes = ["Líquido", "Pó", "Gel"]
+            opcoes = ["Corante", "Cor", "Artigo"]
             for opcao in opcoes:
                 botao_opcao = ctk.CTkButton(frame_opcoes, text=opcao, command=lambda o=opcao: selecionar_opcao(o))
                 botao_opcao.pack(fill="x", pady=2)
