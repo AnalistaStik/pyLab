@@ -1,5 +1,6 @@
-import os, re, sys, subprocess, pyodbc, pyodbc, time
+import os, re, sys, pyodbc, pyodbc
 from datetime import datetime
+from Uteis import mostrar_mensagem_temporaria, alternar_visibilidade_senha,formatar_data, permitir_somente_numeros, formatar_com_apenas_numeros
 
 if getattr(sys, "frozen", False):
     sys.path.append(os.path.join(sys._MEIPASS, "customtkinter"))
@@ -9,70 +10,6 @@ import customtkinter as ctk
 # Configuração inicial 
 ctk.set_appearance_mode("Dark")  # Modo de aparência (System, Dark, Light)
 ctk.set_default_color_theme("dark-blue")  # Tema de cores padrão
-
-
-def mostrar_mensagem_temporaria(label, texto, cor="blue", tempo=3000):
-    """Mostra uma mensagem temporária em um label."""
-    label.configure(text=texto, text_color=cor)
-    label.after(tempo, lambda: label.configure(text=""))
-
-def formatar_data(event, entry, label_mensagem):
-    texto = entry.get().replace("/", "")
-    novo_texto = ""
-
-    # Obtém o ano atual do sistema 
-    ano_atual = datetime.now().year % 100 # Obtém os dois últimos dígitos do ano atual
-
-    # Limita a entrada a no máximo 6 dígitos numéricos
-    texto = texto[:6]
-
-    texto = re.sub(r"[^0-9]", "", texto) # Remove tudo que não é número
-    entry.delete(0, "end")
-
-    for i, char in enumerate(texto):
-        if i in [2, 4]:
-            novo_texto += "/"
-        novo_texto += char
-    
-    entry.delete(0, "end")
-    entry.insert(0, novo_texto)
-
-    # Validação da data
-    if len(texto) == 6:
-        try:
-            dia, mes, ano = int(texto[:2]), int(texto[2:4]) , int(texto[4:])
-
-            if ano > ano_atual:
-                raise ValueError("Ano inválido")
-            
-            datetime(ano, mes, dia).date() # Tenta criar uma data válida
-            label_mensagem.configure(text="", text_color="red")
-
-        except ValueError:
-            mostrar_mensagem_temporaria(label_mensagem, "Data Inválida! Insira um valor correto.", "red")
-         
-# def atualizar_sistema():
-#     hora_atual = datetime.now()
-#     # Atualiza o sistema baixando a última versão do Github.
-#     diretorio_projeto = os.path.dirname(os.path.abspath(__file__))
-
-#     # Verifica se o diretório é um repositório Git
-#     if os.path.exists(os.path.join(diretorio_projeto, ".git")):
-#         try:
-#             if hora_atual.hour == 12:
-#                 # Puxa as últimas alterações do repositório
-#                 subprocess.run(["git", "pull"], cwd=diretorio_projeto, check=True)
-#                 print("Sistema atualizado com sucesso! Reiniciando...")
-
-#                 # Reinicia o programa apoós a atualização
-#                 python_exe = os.path.basename(os.sys.executable)
-#                 os.execl(python_exe, python_exe, *os.sys.argv)
-#             else:
-#                 print("Uma nova versão está disponivel, o programa será atualizado ás 12:00. Não desligue o computador.")
-#         except subprocess.CalledProcessError as e:
-#             print("Erro ao atualizar", e)
-#     else:
-#         print("Este programa não está dentro de um repositório Git.")
     
 # Iniciar aplicação após login
 def iniciar_aplicacao():
@@ -104,6 +41,9 @@ def iniciar_aplicacao():
                 if not hasattr(buscar_operador, "botao_excluir_op") or not buscar_operador.botao_excluir_op.winfo_ismapped():
                     buscar_operador.botao_excluir_op = ctk.CTkButton(frame_acoes_op, text="Excluir", font=("Arial", 20, "bold"), width=100)
                     buscar_operador.botao_excluir_op.pack(side="left", padx=5)
+                
+                if botao_salvar_op.winfo_ismapped():
+                    botao_salvar_op.pack_forget()
             else:
                 mostrar_mensagem_temporaria(label_mensagem_op, "Nenhum operador encontrado.", "red")
 
@@ -121,13 +61,8 @@ def iniciar_aplicacao():
         botao_senha.configure(state="normal")
         mostrar_mensagem_temporaria(label_mensagem_op, "Campos prontos para serem alterados.", "blue") 
         
-        
 # Função que preenche os campos com os dados do operador encontrado
     def dados_pesquisados_operador(resultado):
-        for entrada in entradas_op.values():
-            entrada.configure(state="normal")  # Habilita os campos após a pesquisa
-        for botao in turnos_botoes.values():
-            botao.configure(state="normal") # Habilita os botões de turno após a pesquisa
         
         entradas_op["Matrícula:"].delete(0, "end")
         entradas_op["Matrícula:"].insert(0, resultado[1])
@@ -169,14 +104,6 @@ def iniciar_aplicacao():
         python = sys.executable # Caminho do interpretador Python
         os.execv(python, [python] + sys.argv) # Reinicia o programa
 
-    def alternar_visibilidade_senha():
-        if entrada_senha.cget("show") == "*":
-            entrada_senha.configure(show="") # Mostra a senha
-            botao_senha.configure(text="🔒")
-        else:
-            entrada_senha.configure(show="*")
-            botao_senha.configure(text="🔓")
-
     # Janela principal
     janela = ctk.CTk()
     janela.title("Receitas")
@@ -212,14 +139,17 @@ def iniciar_aplicacao():
         botao_senha.configure(state="normal")  # Habilita o botão de senha para edição
         turno_var.set("Manhã")  # Reseta o valor do botão de opção  
         label_mensagem_op.configure(text="", text_color="red")  # Limpa mensagens de erro ou sucesso
+        entrada_pesquisar_op.delete(0, "end")  # Limpa o campo de pesquisa
+        entrada_pesquisar_op.configure(placeholder_text="Pesquisar Matrícula")  # Reseta o placeholder
 
         # Remove os botões "Alterar" e "Excluir" apenas se eles existirem
         if hasattr(buscar_operador, "botao_alterar_op") and buscar_operador.botao_alterar_op.winfo_ismapped():
             buscar_operador.botao_alterar_op.pack_forget()
         if hasattr(buscar_operador, "botao_excluir_op") and buscar_operador.botao_excluir_op.winfo_ismapped():
             buscar_operador.botao_excluir_op.pack_forget()
+        if not botao_salvar_op.winfo_ismapped():
+            botao_salvar_op.pack(pady=10, padx=10) 
             
-    
     def cancelar_operador():
         for campo, entrada in entradas_op.items():
             janela.focus()
@@ -235,6 +165,8 @@ def iniciar_aplicacao():
         botao_senha.configure(state="normal") # Habilita o botão de senha para edição
         turno_var.set("Manhã")  # Reseta o valor do botão de opção  
         label_mensagem_op.configure(text="", text_color="red") # Limpa mensagens de erro ou sucesso
+        entrada_pesquisar_op.delete(0, "end")
+        entrada_pesquisar_op.configure(placeholder_text="Pesquisar Matrícula") # Reseta o placeholder
         
         if hasattr(buscar_operador, "botao_alterar_op") and buscar_operador.botao_alterar_op.winfo_ismapped():
                 buscar_operador.botao_alterar_op.pack_forget()
@@ -283,13 +215,6 @@ def iniciar_aplicacao():
         label.grid(row=i, column=0, sticky="w", padx=10, pady=15)
 
         if texto == "Senha:":
-            def permitir_somente_numeros(event, entrada_senha):
-                texto = entrada_senha.get()
-                # Remove tudo que não é número
-                texto_limpo = re.sub(r"[^0-9]", "", texto)
-                entrada_senha.delete(0, "end")
-                entrada_senha.insert(0, texto_limpo)
-                
             # Criando um frame para agrupar o campo de senha e o botão
             frame_senha = ctk.CTkFrame(frame_conteudo_op, fg_color="transparent")
             frame_senha.grid(row=i, column=1, sticky="w", padx=10, pady=5)
@@ -297,19 +222,26 @@ def iniciar_aplicacao():
             # Criando o campo de senha dentro do frame
             entrada_senha = ctk.CTkEntry(frame_senha, show="*", width=600, height=30, placeholder_text="Digite aqui...")
             entrada_senha.pack(side="left", fill="both", expand=True)
-            entrada_senha.bind("<KeyRelease>", lambda event, e=entrada_senha: permitir_somente_numeros(event, e))
+            entrada_senha.bind("<KeyRelease>", lambda event: formatar_com_apenas_numeros(event, entrada_senha))
 
             # Criando o botão dentro do mesmo frame (ao lado direito)
-            botao_senha = ctk.CTkButton(frame_senha, text="🔒", width=40, height=30, command=alternar_visibilidade_senha)
+            botao_senha = ctk.CTkButton(frame_senha, text="🔒", width=40, height=30)
             botao_senha.pack(side="right", padx=(5, 0))
+            botao_senha.configure(command=lambda: alternar_visibilidade_senha(entrada_senha, botao_senha))
 
             entradas_op[texto] = entrada_senha      
 
         elif texto in ["Data Cadastro:", "Data Inativo:"]:
-            entrada = ctk.CTkEntry(frame_conteudo_op, width=600, height=30, placeholder_text="DD/MM/AA")
-            entrada.bind("<KeyRelease>", lambda event, e=entrada: formatar_data(event, e, label_mensagem_op))
-            entradas_op[texto] = entrada
-            entrada.grid(row=i, column=1, sticky="w", padx=10, pady=5)
+            entrada_data = ctk.CTkEntry(frame_conteudo_op, width=600, height=30, placeholder_text="DD/MM/AA")
+            entrada_data.bind("<KeyRelease>", lambda event, e=entrada_data: formatar_data(event, e, label_mensagem_op))
+            entradas_op[texto] = entrada_data
+            entrada_data.grid(row=i, column=1, sticky="w", padx=10, pady=5)
+        
+        elif texto == "Matrícula:":
+            entrada_matricula = ctk.CTkEntry(frame_conteudo_op, width=600, height=30, placeholder_text="Digite aqui...")
+            entrada_matricula.bind("<KeyRelease>", lambda event: formatar_com_apenas_numeros(event, entrada_matricula))
+            entradas_op[texto] = entrada_matricula
+            entrada_matricula.grid(row=i, column=1, sticky="w", padx=10, pady=5)
         else:
             entrada = ctk.CTkEntry(frame_conteudo_op, width=600, height=30, placeholder_text="Digite aqui...")
             entradas_op[texto] = entrada
@@ -390,13 +322,11 @@ def iniciar_aplicacao():
 
             mostrar_mensagem_temporaria(label_mensagem_op, "Operador registrado", "blue")
 
-            for entrada, campos in entradas_op.values():
+            for campo, entrada in entradas_op.items():
                 entrada.delete(0, "end")  # Limpa os campos após o cadastro
-                
-                if campos == "Data Cadastro:" or campos == "Data Inativo:":
-                    entrada.configure(placeholder_text="DD/MM/AA")
-                else:
-                    entrada.configure(placeholder_text="Digite aqui...")
+                entrada.configure(placeholder_text="DD/MM/AA") if campo == "Data Cadastro:" or campo == "Data Inativo:" else entrada.configure(placeholder_text="Digite aqui...")
+            
+            turno_var.set("Manhã")  # Reseta o valor do botão de opção
 
         except pyodbc.Error as e:
             mostrar_mensagem_temporaria(label_mensagem_op, "Erro ao inserir operador", "red")
@@ -419,27 +349,20 @@ def iniciar_aplicacao():
             janela.focus()
             entrada.configure(state="normal") # Habilita os campos para edição
             entrada.delete(0, "end")
-
             if "Tipo:" in campo:    
                 entrada.configure(placeholder_text="Selecione um tipo")
                 entrada.configure(state="readonly")
-            elif campo == "Data Cadastro:" or campo == "Data Inativo:":
+                if "G/L:" in entradas_in:
+                    entradas_in["G/L:"].grid_forget()
+                    entradas_in["G/L_label"].grid_forget()
+                    del entradas_in["G/L:"]
+                    del entradas_in["G/L_label"]
+
+            if campo == "Data Cadastro:" or campo == "Data Inativo:":
                 entrada.configure(placeholder_text="DD/MM/AA") 
             else:
                 entrada.configure(placeholder_text="Digite aqui...")
             
-            if "G/L:" in entradas_in:
-                entradas_in["G/L:"].grid_forget()
-                entradas_in["G/L_label"].grid_forget()
-                del entradas_in["G/L:"]
-                del entradas_in["G/L_label"]
-
-        # Deleta botões "Alterar" e "Excluir" se existirem
-        # if hasattr(buscar, "botao_alterar_op") and buscar_operador.botao_alterar_op.winfo_ismapped():
-        #     buscar_operador.botao_alterar_op.pack_forget()
-        # if hasattr(buscar_operador, "botao_excluir_op") and buscar_operador.botao_excluir_op.winfo_ismapped():
-        #     buscar_operador.botao_excluir_op.pack_forget()
-
     def cancelar_cadastro():
         for campo, entrada in entradas_in.items():
             janela.focus()
@@ -596,7 +519,7 @@ def iniciar_aplicacao():
             entradas_in[texto] = entrada_in
             entrada_in.grid(row=i, column=1, sticky="w", padx=10, pady=5)
 
-        
+
     def salvar_cadastro(entradas_in, label_mensagem_in):
         try:
             # Obter valores dos campos de entrada
@@ -681,37 +604,39 @@ def iniciar_aplicacao():
         
     # Executar Aplicação
     janela.mainloop()
+
+iniciar_aplicacao()
     
-# Função de autenticação
-def autenticar():
-    usuario = entrada_usuario.get()
-    senha = entrada_senha.get()
-    if usuario == "" and senha == "":
-        login_janela.destroy()
-        iniciar_aplicacao()
-    else:
-        label_erro.configure(text="Usuário ou senha incorretos")
+# # Função de autenticação
+# def autenticar():
+#     usuario = entrada_usuario.get()
+#     senha = entrada_senha.get()
+#     if usuario == "" and senha == "":
+#         login_janela.destroy()
+#         iniciar_aplicacao()
+#     else:
+#         label_erro.configure(text="Usuário ou senha incorretos")
 
-# Login
-login_janela = ctk.CTk()
-login_janela.title("Login")
-login_janela.geometry("500x400")  # Tamanho da janela de login
-login_janela.eval('tk::PlaceWindow . center')  # Centraliza a janela
+# # Login
+# login_janela = ctk.CTk()
+# login_janela.title("Login")
+# login_janela.geometry("500x400")  # Tamanho da janela de login
+# login_janela.eval('tk::PlaceWindow . center')  # Centraliza a janela
 
-label_usuario = ctk.CTkLabel(login_janela, text="Usuário:")
-label_usuario.pack(pady=5)
-entrada_usuario = ctk.CTkEntry(login_janela)
-entrada_usuario.pack(pady=5)
+# label_usuario = ctk.CTkLabel(login_janela, text="Usuário:")
+# label_usuario.pack(pady=5)
+# entrada_usuario = ctk.CTkEntry(login_janela)
+# entrada_usuario.pack(pady=5)
 
-label_senha = ctk.CTkLabel(login_janela, text="Senha:")
-label_senha.pack(pady=5)
-entrada_senha = ctk.CTkEntry(login_janela, show="*")
-entrada_senha.pack(pady=5)
+# label_senha = ctk.CTkLabel(login_janela, text="Senha:")
+# label_senha.pack(pady=5)
+# entrada_senha = ctk.CTkEntry(login_janela, show="*")
+# entrada_senha.pack(pady=5)
 
-botao_login = ctk.CTkButton(login_janela, text="Entrar", command=autenticar)
-botao_login.pack(pady=10)
+# botao_login = ctk.CTkButton(login_janela, text="Entrar", command=autenticar)
+# botao_login.pack(pady=10)
 
-label_erro = ctk.CTkLabel(login_janela, text="", text_color="red")
-label_erro.pack()
+# label_erro = ctk.CTkLabel(login_janela, text="", text_color="red")
+# label_erro.pack()
 
-login_janela.mainloop()
+# login_janela.mainloop()
