@@ -1,5 +1,5 @@
 from datetime import datetime
-import re
+import re, pyodbc
 
 def permitir_somente_numeros(entrada):
     # Remove caracteres especiais e formata a data
@@ -61,4 +61,15 @@ def formatar_com_apenas_numeros(event, entrada):
     entrada.insert(0, apenas_numeros)
 
 
+def fazer_conexao_sql_server():
+    # Configurações de conexão
+    server = '168.190.30.2'
+    database = 'Laboratorio'
+    username = 'sa'
+    password = 'Stik0123'
 
+    # Conexão com o banco de dados
+    conn = pyodbc.connect(
+        f'DRIVER={{ODBC Driver 17 for SQL Server}};SERVER={server};DATABASE={database};UID={username};PWD={password}'
+    )
+    return conn
