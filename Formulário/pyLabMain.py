@@ -43,7 +43,6 @@ def iniciar_aplicacao():
                     botao_salvar_op.pack_forget()
             else:
                 mostrar_mensagem_temporaria(label_mensagem_op, "Nenhum operador encontrado.", "red")
-
             conn.close()
 
         except pyodbc.Error as e:
@@ -97,6 +96,15 @@ def iniciar_aplicacao():
         for botao in turnos_botoes.values():
             botao.configure(state="disabled") 
         botao_senha.configure(state="disabled")
+    
+    def habilitar_campos_operador():
+        for botao in turnos_botoes.values():
+            botao.configure(state="normal")  # Habilita os botões de turno para edição    
+        botao_senha.configure(state="normal")  # Habilita o botão de senha para edição
+        turno_var.set("Manhã")  # Reseta o valor do botão de opção  
+        label_mensagem_op.configure(text="", text_color="red")  # Limpa mensagens de erro ou sucesso
+        entrada_pesquisar_op.delete(0, "end")  # Limpa o campo de pesquisa
+        entrada_pesquisar_op.configure(placeholder_text="Pesquisar Matrícula")  # Reseta o placeholder
 
     def atualizar_programa(event=None):
         """Reinicia a aplicação executanto novamente o script."""
@@ -133,14 +141,6 @@ def iniciar_aplicacao():
             else:
                 entrada.configure(placeholder_text="Digite aqui...")    
 
-        for botao in turnos_botoes.values():
-            botao.configure(state="normal")  # Habilita os botões de turno para edição    
-        botao_senha.configure(state="normal")  # Habilita o botão de senha para edição
-        turno_var.set("Manhã")  # Reseta o valor do botão de opção  
-        label_mensagem_op.configure(text="", text_color="red")  # Limpa mensagens de erro ou sucesso
-        entrada_pesquisar_op.delete(0, "end")  # Limpa o campo de pesquisa
-        entrada_pesquisar_op.configure(placeholder_text="Pesquisar Matrícula")  # Reseta o placeholder
-
         # Remove os botões "Alterar" e "Excluir" apenas se eles existirem
         if hasattr(buscar_operador, "botao_alterar_op") and buscar_operador.botao_alterar_op.winfo_ismapped():
             buscar_operador.botao_alterar_op.pack_forget()
@@ -148,6 +148,7 @@ def iniciar_aplicacao():
             buscar_operador.botao_excluir_op.pack_forget()
         if not botao_salvar_op.winfo_ismapped():
             botao_salvar_op.pack(pady=10, padx=10) 
+        habilitar_campos_operador()  # Habilita os campos após limpar
             
     # Criar um frame para os botões na parte superior
     frame_botoes_op = ctk.CTkFrame(tab_operador, fg_color="transparent")
@@ -170,8 +171,7 @@ def iniciar_aplicacao():
     frame_pesquisar_op.pack()
 
     entrada_pesquisar_op = ctk.CTkEntry(frame_pesquisar_op, width=305, placeholder_text="Pesquisar Matrícula", font=("Arial", 15))
-    botao_pesquisar_op = ctk.CTkButton(frame_pesquisar_op, text="Pesquisar", font=("Arial", 20, "bold"), width=100,
-                                        command=buscar_operador)
+    botao_pesquisar_op = ctk.CTkButton(frame_pesquisar_op, text="Pesquisar", font=("Arial", 20, "bold"), width=100, command=buscar_operador)
 
     entrada_pesquisar_op.pack(side="left", padx=5)
     botao_pesquisar_op.pack(side="left", padx=5)                
@@ -295,14 +295,7 @@ def iniciar_aplicacao():
             conn.commit()
 
             mostrar_mensagem_temporaria(label_mensagem_op, "Operador registrado", "blue")
-
-            for campo, entrada in entradas_op.items():
-                entrada.delete(0, "end")  # Limpa os campos após o cadastro
-                if campo in ["Data Cadastro:", "Data Inativo:"]:
-                    entrada.configure(placeholder_text="DD/MM/AA")
-                else:
-                    entrada.configure(placeholder_text="Digite aqui...")            
-            turno_var.set("Manhã")  # Reseta o valor do botão de opção
+            limpa_campos_operador()  # Limpa os campos após salvar
 
         except pyodbc.Error as e:
             mostrar_mensagem_temporaria(label_mensagem_op, "Erro ao inserir operador", "red")
@@ -318,6 +311,11 @@ def iniciar_aplicacao():
     botao_salvar_op = ctk.CTkButton(frame_salvar_op, text="Salvar", font=("Arial", 35, "bold"), 
                                  command=lambda: salvar_operador(entradas_op, turno_var, label_mensagem_op))
     botao_salvar_op.pack(pady=10, padx=10)  
+
+    def desabilita_campos_cadastro():
+        for entrada in entradas_in.values():
+            entrada.configure(state="disabled")
+        botao_tipo.configure(state="disabled")
 
     # Aba Cadastro
     def buscar_cadastro():
@@ -348,7 +346,6 @@ def iniciar_aplicacao():
 
                 # Verifica se os botões já existem antes de criar
                 if not hasattr(buscar_cadastro, "botao_alterar_in") or not buscar_cadastro.botao_alterar_in.winfo_ismapped():
-                    # Remove os botões "Alterar" e "Excluir" apenas se eles existirem
                     buscar_cadastro.botao_alterar_in = ctk.CTkButton(frame_acoes_in, text="Alterar", font=("Arial", 20, "bold"), width=100)
                     buscar_cadastro.botao_alterar_in.pack(side="left", padx=5)
                 if not hasattr(buscar_cadastro, "botao_excluir_in") or not buscar_cadastro.botao_excluir_in.winfo_ismapped():
@@ -381,32 +378,22 @@ def iniciar_aplicacao():
             entradas_in["G/L:"].delete(0, "end")
             entradas_in["G/L:"].insert(0, str(resultado[4]) if resultado[4] is not None else "")
         
-        for entrada in entradas_in.values():
-            entrada.configure(state="disabled")
+        desabilita_campos_cadastro()  # Desabilita os campos após a pesquisa
 
+    def habilita_campos_cadastro():
+        for campo, entrada in entradas_in.items():
+            janela.focus()
+            entrada.configure(state="normal")
+        botao_tipo.configure(state="normal")  # Habilita o botão de tipo para edição
+        
     def limpa_campos_cadastro():
+        # Remove campo G/L se existir
         if "G/L:" in entradas_in:
             entradas_in["G/L:"].grid_forget()
             entradas_in["G/L_label"].grid_forget()
             del entradas_in["G/L:"]
             del entradas_in["G/L_label"]
        
-        for campo, entrada in entradas_in.items():
-            janela.focus()
-            entrada.configure(state="normal") # Habilita os campos para edição
-            entrada.delete(0, "end")
-            
-            if campo == "Tipo:":	    
-                entrada.configure(placeholder_text="Selecione um tipo")
-                entrada.configure(state="readonly")
-                
-            elif campo in ["Data Cadastro:", "Data Inativo:"]:
-                entrada.configure(placeholder_text="DD/MM/AA") 
-            else:
-                entrada.configure(placeholder_text="Digite aqui...")
-        entrada_pesquisar_in.delete(0, "end")  # Limpa o campo de pesquisa
-        entrada_pesquisar_in.configure(placeholder_text="Pesquisar Descrição")  # Reseta o placeholder
-
         # Remove os botões "Alterar" e "Excluir" apenas se eles existirem
         if hasattr(buscar_cadastro, "botao_alterar_in") and buscar_cadastro.botao_alterar_in.winfo_ismapped():
             buscar_cadastro.botao_alterar_in.pack_forget()
@@ -414,6 +401,21 @@ def iniciar_aplicacao():
             buscar_cadastro.botao_excluir_in.pack_forget()
         if not botao_salvar_in.winfo_ismapped():
             botao_salvar_in.pack(pady=10, padx=10)
+
+        for campo, entrada in entradas_in.items():
+            janela.focus()
+            entrada.configure(state="normal")
+            entrada.delete(0, "end")
+            if campo == "Tipo:":
+                entrada.configure(placeholder_text="Selecione um tipo")
+                entrada.configure(state="readonly")
+            elif campo in ["Data Cadastro:", "Data Inativo:"]:
+                entrada.configure(placeholder_text="DD/MM/AA")
+            else:
+                entrada.configure(placeholder_text="Digite aqui...")
+        entrada_pesquisar_in.delete(0, "end")  # Limpa o campo de pesquisa
+        entrada_pesquisar_in.configure(placeholder_text="Pesquisar Descrição")  # Reseta o placeholder
+        habilita_campos_cadastro()  # Habilita os campos após limpar
 
     # Criar um frame para os botões na parte superior
     frame_botoes_in = ctk.CTkFrame(tab_insumos, fg_color="transparent")
@@ -600,18 +602,7 @@ def iniciar_aplicacao():
         except pyodbc.Error as e:
             mostrar_mensagem_temporaria(label_mensagem_in, "Erro ao inserir cadastro", "red")
             print(str(e))
-        
-        for campo, entrada in entradas_in.items():
-            janela.focus()
-            entrada.delete(0, "end")
-
-            if "Tipo:" in campo:
-                entrada.configure(placeholder_text="Selecione um tipo")
-                entrada.configure(state="readonly")
-            elif "Data Cadastro:" or "Data Inativo:" in campo:
-                entrada.configure(placeholder_text="DD/MM/AA")
-            else:
-                entrada.configure(placeholder_text="Digite aqui...")
+        limpa_campos_cadastro() # Limpa os campos após salvar
 
     frame_salvar_in = ctk.CTkFrame(frame_conteudo_in, fg_color="transparent")
     frame_salvar_in.grid(row=999, column=0, columnspan=2, pady=20, sticky="sew")
