@@ -1,11 +1,10 @@
 import os, re, sys, pyodbc, pyodbc
 from datetime import datetime
+import customtkinter as ctk
 from Uteis import mostrar_mensagem_temporaria, alternar_visibilidade_senha,formatar_data, formatar_com_apenas_numeros, fazer_conexao_sql_server
 
 if getattr(sys, "frozen", False):
     sys.path.append(os.path.join(sys._MEIPASS, "customtkinter"))
-
-import customtkinter as ctk
 
 # Configuração inicial 
 ctk.set_appearance_mode("Dark")  # Modo de aparência (System, Dark, Light)
@@ -89,13 +88,15 @@ def iniciar_aplicacao():
             turno_var.set("Noite")
         else:
             turno_var.set("")  # caso o valor não exista
+        desabilitar_campos_operador()  # Desabilita os campos após a pesquisa
 
+    def desabilitar_campos_operador():
         for entrada in entradas_op.values():
-            entrada.configure(state="disabled")  # Desabilita os campos após a pesquisa
-            entrada_senha.configure(show="*") # Mantém a senha oculta
+            entrada.configure(state="disabled")
+            entrada_senha.configure(show="*")
         for botao in turnos_botoes.values():
-            botao.configure(state="disabled") # Desabilita os botões de turno após a pesquisa
-        botao_senha.configure(state="disabled") # Desabilita o botão de senha após a pesquisa
+            botao.configure(state="disabled") 
+        botao_senha.configure(state="disabled")
 
     def atualizar_programa(event=None):
         """Reinicia a aplicação executanto novamente o script."""
@@ -127,7 +128,7 @@ def iniciar_aplicacao():
             entrada.configure(state="normal")  # Habilita os campos para edição
             entrada.delete(0, "end")
             
-            if campo == "Data Cadastro:" or campo == "Data Inativo:":
+            if campo in ["Data Cadastro:", "Data Inativo:"]:
                 entrada.configure(placeholder_text="DD/MM/AA")
             else:
                 entrada.configure(placeholder_text="Digite aqui...")    
@@ -297,8 +298,10 @@ def iniciar_aplicacao():
 
             for campo, entrada in entradas_op.items():
                 entrada.delete(0, "end")  # Limpa os campos após o cadastro
-                entrada.configure(placeholder_text="DD/MM/AA") if campo == "Data Cadastro:" or campo == "Data Inativo:" else entrada.configure(placeholder_text="Digite aqui...")
-            
+                if campo in ["Data Cadastro:", "Data Inativo:"]:
+                    entrada.configure(placeholder_text="DD/MM/AA")
+                else:
+                    entrada.configure(placeholder_text="Digite aqui...")            
             turno_var.set("Manhã")  # Reseta o valor do botão de opção
 
         except pyodbc.Error as e:
@@ -393,17 +396,18 @@ def iniciar_aplicacao():
             entrada.configure(state="normal") # Habilita os campos para edição
             entrada.delete(0, "end")
             
-            if "Tipo:" in campo:    
+            if campo == "Tipo:":	    
                 entrada.configure(placeholder_text="Selecione um tipo")
                 entrada.configure(state="readonly")
                 
-            elif "Data Cadastro:" or "Data Inativo:" in campo:
+            elif campo in ["Data Cadastro:", "Data Inativo:"]:
                 entrada.configure(placeholder_text="DD/MM/AA") 
             else:
                 entrada.configure(placeholder_text="Digite aqui...")
         entrada_pesquisar_in.delete(0, "end")  # Limpa o campo de pesquisa
         entrada_pesquisar_in.configure(placeholder_text="Pesquisar Descrição")  # Reseta o placeholder
 
+        # Remove os botões "Alterar" e "Excluir" apenas se eles existirem
         if hasattr(buscar_cadastro, "botao_alterar_in") and buscar_cadastro.botao_alterar_in.winfo_ismapped():
             buscar_cadastro.botao_alterar_in.pack_forget()
         if hasattr(buscar_cadastro, "botao_excluir_in") and buscar_cadastro.botao_excluir_in.winfo_ismapped():
@@ -568,13 +572,6 @@ def iniciar_aplicacao():
                     mostrar_mensagem_temporaria(label_mensagem_in, "Erro: G/L deve ser um número inteiro.", "red")
             else:
                 gl = None
-
-            # Conversões de tipo
-            try:
-                data_cadastro = datetime.strptime(data_cadastro, "%d/%m/%y").date() if data_cadastro else None
-                data_inativo = datetime.strptime(data_inativo, "%d/%m/%y").date() if data_inativo else None
-            except ValueError:
-                mostrar_mensagem_temporaria(label_mensagem_in, "Erro: Data deve estar no formato DD/MM/AA.", "red")
 
             # Criar conexão com o banco de dados
             conn = fazer_conexao_sql_server()
