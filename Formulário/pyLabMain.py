@@ -3,9 +3,6 @@ from datetime import datetime
 import customtkinter as ctk
 from Uteis import mostrar_mensagem_temporaria, alternar_visibilidade_senha,formatar_data, formatar_com_apenas_numeros, fazer_conexao_sql_server
 
-if getattr(sys, "frozen", False):
-    sys.path.append(os.path.join(sys._MEIPASS, "customtkinter"))
-
 # Configuração inicial 
 ctk.set_appearance_mode("Dark")  # Modo de aparência (System, Dark, Light)
 ctk.set_default_color_theme("dark-blue")  # Tema de cores padrão
@@ -32,11 +29,11 @@ def iniciar_aplicacao():
                 # Verifica se os botões já existem antes de criar
                 if not hasattr(buscar_operador, "botao_alterar_op") or not buscar_operador.botao_alterar_op.winfo_ismapped():
                     # Remove os botões "Alterar" e "Excluir" apenas se eles existirem
-                    buscar_operador.botao_alterar_op = ctk.CTkButton(frame_acoes_op, text="Alterar", font=("Arial", 20, "bold"), width=100, command=alterar_operador)
+                    buscar_operador.botao_alterar_op = ctk.CTkButton(frame_acoes_op, text="Alterar", font=("Arial", 20, "bold"), width=100, command=habilitar_campos_operador)
                     buscar_operador.botao_alterar_op.pack(side="left", padx=5)
 
                 if not hasattr(buscar_operador, "botao_excluir_op") or not buscar_operador.botao_excluir_op.winfo_ismapped():
-                    buscar_operador.botao_excluir_op = ctk.CTkButton(frame_acoes_op, text="Excluir", font=("Arial", 20, "bold"), width=100)
+                    buscar_operador.botao_excluir_op = ctk.CTkButton(frame_acoes_op, text="Excluir", font=("Arial", 20, "bold"), width=100, command=deleta_operador)
                     buscar_operador.botao_excluir_op.pack(side="left", padx=5)
                 
                 if botao_salvar_op.winfo_ismapped():
@@ -48,14 +45,6 @@ def iniciar_aplicacao():
         except pyodbc.Error as e:
             mostrar_mensagem_temporaria(label_mensagem_op, "Erro ao pesquisar operador.", "red")
             print(str(e))
-
-    def alterar_operador():
-        for entrada in entradas_op.values():
-            entrada.configure(state="normal")
-        for botao in turnos_botoes.values():
-            botao.configure(state="normal")
-        botao_senha.configure(state="normal")
-        mostrar_mensagem_temporaria(label_mensagem_op, "Campos prontos para serem alterados.", "blue") 
         
 # Função que preenche os campos com os dados do operador encontrado
     def dados_pesquisados_operador(resultado):
@@ -96,15 +85,23 @@ def iniciar_aplicacao():
         for botao in turnos_botoes.values():
             botao.configure(state="disabled") 
         botao_senha.configure(state="disabled")
+        
+        if botao_salvar_op.winfo_ismapped():
+            botao_salvar_op.pack_forget()
     
     def habilitar_campos_operador():
+        for campo, entrada in entradas_op.items():
+            janela.focus()
+            entrada.configure(state='normal')
         for botao in turnos_botoes.values():
             botao.configure(state="normal")  # Habilita os botões de turno para edição    
         botao_senha.configure(state="normal")  # Habilita o botão de senha para edição
         turno_var.set("Manhã")  # Reseta o valor do botão de opção  
-        label_mensagem_op.configure(text="", text_color="red")  # Limpa mensagens de erro ou sucesso
         entrada_pesquisar_op.delete(0, "end")  # Limpa o campo de pesquisa
         entrada_pesquisar_op.configure(placeholder_text="Pesquisar Matrícula")  # Reseta o placeholder
+
+        if not botao_salvar_op.winfo_ismapped():
+            botao_salvar_op.pack(pady=10, padx=10)
 
     def atualizar_programa(event=None):
         """Reinicia a aplicação executanto novamente o script."""
@@ -149,7 +146,60 @@ def iniciar_aplicacao():
         if not botao_salvar_op.winfo_ismapped():
             botao_salvar_op.pack(pady=10, padx=10) 
         habilitar_campos_operador()  # Habilita os campos após limpar
-            
+
+    def deleta_operador():
+        # Chama o popup de confirmação e executa a exclusão se confirmado
+        def ao_confirmar(confirmado):
+            if confirmado:
+                try:
+                    matricula = entrada_pesquisar_op.get().strip()
+                    conn = fazer_conexao_sql_server()
+                    cursor = conn.cursor()
+
+                    query = """
+                        DELETE
+                        FROM TbOper
+                        WHERE Matricula = ?"""
+                    
+                    cursor.execute(query, (matricula,))
+                    conn.commit()
+
+                    mostrar_mensagem_temporaria(label_mensagem_op, "Operador excluído.", 'red')
+                    limpa_campos_operador()
+                except pyodbc.Error as e:
+                    mostrar_mensagem_temporaria(label_mensagem_op, "Erro ao excluir operador", "red")
+                    print(str(e))
+            else:
+                mostrar_mensagem_temporaria(label_mensagem_op, "Exclusão cancelada.", "blue")
+
+        popup_confirmacao_exclusao(ao_confirmar)
+
+    def popup_confirmacao_exclusao(callback):
+        confirm_window = ctk.CTkToplevel()
+        confirm_window.title("Confirmação de Exclusão")
+        confirm_window.geometry("400x180")
+        confirm_window.resizable(False, False)
+        confirm_window.grab_set()  # Torna modal
+
+        label = ctk.CTkLabel(confirm_window, text="Tem certeza que deseja excluir esse operador?", font=("Arial", 18))
+        label.pack(pady=25)
+
+        def confirmar():
+            callback(True)
+            confirm_window.destroy()
+
+        def cancelar():
+            callback(False)
+            confirm_window.destroy()
+
+        frame_botoes = ctk.CTkFrame(confirm_window, fg_color="transparent")
+        frame_botoes.pack(pady=10)
+
+        botao_sim = ctk.CTkButton(frame_botoes, text="Sim", width=100, command=confirmar)
+        botao_sim.pack(side="left", padx=20)
+        botao_nao = ctk.CTkButton(frame_botoes, text="Não", width=100, command=cancelar)
+        botao_nao.pack(side="left", padx=20)
+              
     # Criar um frame para os botões na parte superior
     frame_botoes_op = ctk.CTkFrame(tab_operador, fg_color="transparent")
     frame_botoes_op.pack(pady=10, fill="x")
@@ -259,18 +309,6 @@ def iniciar_aplicacao():
             conn = fazer_conexao_sql_server()
             cursor = conn.cursor()
 
-            # Conversões de tipo
-            try:
-                matricula = int(matricula) if matricula else None  # Converte para INT se não estiver vazio
-            except ValueError:
-                mostrar_mensagem_temporaria(label_mensagem_op, "Erro: Matricula deve ser um número inteiro.", "red")
-
-            try:
-                data_cadastro = datetime.strptime(data_cadastro, "%d/%m/%y").date() if data_cadastro else None
-                data_inativo = datetime.strptime(data_inativo, "%d/%m/%y").date() if data_inativo else None
-            except ValueError:
-                mostrar_mensagem_temporaria(label_mensagem_op, "Erro: Data deve estar no formato DD/MM/AA.", "red")
-
             # Se o botão "Alterar" estiver visível, atualiza os dados
             if hasattr(buscar_operador, "botao_alterar_op") and buscar_operador.botao_alterar_op.winfo_ismapped():
                 query = """
@@ -346,7 +384,7 @@ def iniciar_aplicacao():
 
                 # Verifica se os botões já existem antes de criar
                 if not hasattr(buscar_cadastro, "botao_alterar_in") or not buscar_cadastro.botao_alterar_in.winfo_ismapped():
-                    buscar_cadastro.botao_alterar_in = ctk.CTkButton(frame_acoes_in, text="Alterar", font=("Arial", 20, "bold"), width=100)
+                    buscar_cadastro.botao_alterar_in = ctk.CTkButton(frame_acoes_in, text="Alterar", font=("Arial", 20, "bold"), width=100, command=habilita_campos_cadastro)
                     buscar_cadastro.botao_alterar_in.pack(side="left", padx=5)
                 if not hasattr(buscar_cadastro, "botao_excluir_in") or not buscar_cadastro.botao_excluir_in.winfo_ismapped():
                     buscar_cadastro.botao_excluir_in = ctk.CTkButton(frame_acoes_in, text="Excluir", font=("Arial", 20, "bold"), width=100)
@@ -385,6 +423,7 @@ def iniciar_aplicacao():
             janela.focus()
             entrada.configure(state="normal")
         botao_tipo.configure(state="normal")  # Habilita o botão de tipo para edição
+        mostrar_mensagem_temporaria(label_mensagem_in, "Campos habilitados", 'blue')
         
     def limpa_campos_cadastro():
         # Remove campo G/L se existir

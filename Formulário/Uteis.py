@@ -4,7 +4,7 @@ import re, pyodbc
 def permitir_somente_numeros(entrada):
     # Remove caracteres especiais e formata a data
     texto = re.sub(r"[^0-9]", "", entrada)
-    return texto    
+    return texto   
 
 def formatar_com_barras(texto):
     novo_texto = ""
@@ -14,32 +14,46 @@ def formatar_com_barras(texto):
         novo_texto += char
     return novo_texto
 
-def validar_data(texto):
-    ano_atual = datetime.now().year % 100  # Obtém os dois últimos dígitos do ano atual
+def validar_data(texto, label_mensagem):
+    # Espera-se que texto seja uma string com 6 dígitos: DDMMYY
+    if len(texto) != 6 or not texto.isdigit():
+        mostrar_mensagem_temporaria(label_mensagem, "Data inválida", "red")
+        return False
+
+    dia, mes, ano = int(texto[:2]), int(texto[2:4]), int(texto[4:])
+    ano_atual = datetime.now().year % 100  # Dois últimos dígitos do ano atual
+
+    # Verifica se mês e dia estão em intervalos válidos
+    if not (1 <= mes <= 12):
+        mostrar_mensagem_temporaria(label_mensagem, "Mês inválido", "red")
+        return False
+    if not (1 <= dia <= 31):
+        mostrar_mensagem_temporaria(label_mensagem, "Dia inválido", "red")
+        return False
+    if ano > ano_atual:
+        mostrar_mensagem_temporaria(label_mensagem, "Ano inválido", "red")
+        return False
+
+    # Verifica se a data é válida (ex: 30/02/23 não existe)
     try:
-        dia, mes, ano = int(texto[:2]), int(texto[2:4]), int(texto[4:])
-        if ano > ano_atual:
-            return False
-        datetime(ano, mes, dia)
+        datetime(2000 + ano, mes, dia)  # Considera anos 2000+
         return True
     except ValueError:
+        mostrar_mensagem_temporaria(label_mensagem, "Data inválida", "red")
         return False
 
 def formatar_data(event, entrada, label_mensagem):
     texto = permitir_somente_numeros(entrada.get())
+    texto = texto[:6]
     entrada.delete(0, "end")
-
     texto_formatado = formatar_com_barras(texto)
     entrada.insert(0, texto_formatado)
 
-    if len(texto) == 6 and not validar_data(texto):
-        mostrar_mensagem_temporaria(label_mensagem, "Data inválida", "red")
-        entrada.delete(0, "end")
-
-        if len(texto) == 6 and not validar_data(texto):
-            mostrar_mensagem_temporaria(label_mensagem, "Data inválida", "red")
-        else:
-            label_mensagem.configure(text="", text_color="red")
+    if len(texto) == 6:
+        if not validar_data(texto, label_mensagem):
+            entrada.delete(0, "end")
+    else:
+        label_mensagem.configure(text="", text_color="red")
 
 def mostrar_mensagem_temporaria(label, texto, cor="blue", tempo=3000):
     """Mostra uma mensagem temporária em um label."""
